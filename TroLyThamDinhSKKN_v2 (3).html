@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trợ Lý Thẩm Định SKKN - OpenRouter</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: #f5f0e8;
+  min-height: 100vh;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(180,165,130,0.12) 28px);
+}
+header {
+  background: #1a1a2e;
+  padding: 0;
+}
+.header-inner {
+  max-width: 900px; margin: 0 auto;
+  padding: 22px 32px;
+  display: flex; align-items: center; gap: 18px;
+}
+.seal {
+  width: 56px; height: 56px; border-radius: 50%;
+  border: 2px solid #c9a84c;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; background: rgba(201,168,76,0.1); flex-shrink: 0;
+}
+.header-inner h1 { font-family: 'Playfair Display', serif; font-size: 21px; color: #fff; }
+.header-inner p { font-size: 11px; color: #c9a84c; letter-spacing: 2px; margin-top: 3px; text-transform: uppercase; font-family: monospace; }
+
+.container { max-width: 900px; margin: 0 auto; padding: 26px 32px 80px; }
+
+/* TABS */
+.tabs { display: flex; border-bottom: 2px solid #d4c9b0; margin-bottom: 24px; }
+.tab { padding: 10px 22px; border: none; background: none; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; color: #999; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color .2s; }
+.tab.active { color: #1a1a2e; border-bottom-color: #c9a84c; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* CARD */
+.card { background: #fff; border: 1px solid #d4c9b0; border-radius: 6px; padding: 22px 26px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(26,26,46,0.07); }
+.card-title { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #ede8dc; display: flex; align-items: center; gap: 8px; }
+.card-title::before { content: ''; display: block; width: 4px; height: 18px; background: #c9a84c; border-radius: 2px; }
+
+/* FORM */
+label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; }
+input[type=text], input[type=password], select, textarea {
+  width: 100%; padding: 9px 13px;
+  border: 1px solid #d4c9b0; border-radius: 4px;
+  font-family: inherit; font-size: 13px;
+  background: #f5f0e8; outline: none;
+}
+input:focus, select:focus, textarea:focus { border-color: #c9a84c; }
+textarea { min-height: 250px; line-height: 1.8; resize: vertical; }
+.gap { height: 14px; }
+
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 26px; border: none; border-radius: 3px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s; }
+.btn-primary { background: #1a1a2e; color: #fff; }
+.btn-primary:hover { background: #2d2d4a; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-outline { background: transparent; color: #333; border: 1.5px solid #d4c9b0; }
+.btn-outline:hover { border-color: #c9a84c; }
+.btn-row { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+
+/* ALERT */
+.alert { padding: 11px 15px; border-radius: 3px; font-size: 13px; margin-top: 12px; }
+.alert-error { background: #fdecea; border-left: 3px solid #c0392b; color: #922b21; }
+.alert-success { background: #d5f5e3; border-left: 3px solid #27ae60; color: #1e8449; }
+.alert-info { background: #fffdf5; border-left: 3px solid #c9a84c; color: #5a4a1a; }
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: #1a1a2e; }
+th { color: #fff; padding: 9px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+tbody tr:nth-child(even) td { background: #faf9f6; }
+tbody tr:nth-child(odd) td { background: #fff; }
+td { padding: 10px 12px; border-bottom: 1px solid #f0ebe0; vertical-align: top; }
+tfoot td { padding: 10px 12px; }
+
+input[type=number] { width: 65px; padding: 4px 8px; border: 1px solid #d4c9b0; border-radius: 3px; font-family: monospace; font-size: 13px; text-align: center; background: #f5f0e8; }
+.badge { padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.badge-req { background: #fdecea; color: #c0392b; }
+.badge-opt { background: #e8f4f8; color: #2980b9; }
+
+/* UPLOAD */
+.upload-box { border: 2px dashed #d4c9b0; border-radius: 4px; padding: 40px 30px; text-align: center; cursor: pointer; background: #faf9f6; transition: all .2s; position: relative; }
+.upload-box:hover { border-color: #c9a84c; }
+.upload-box input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.file-info { background: #ede8dc; border: 1px solid #d4c9b0; border-radius: 4px; padding: 13px 16px; display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+
+/* INPUT MODE TABS */
+.mode-tabs { display: flex; border: 1px solid #d4c9b0; border-radius: 4px; overflow: hidden; width: fit-content; margin-bottom: 14px; }
+.mode-tab { padding: 7px 18px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; background: #faf9f6; color: #888; transition: all .2s; }
+.mode-tab.active { background: #1a1a2e; color: #fff; }
+
+/* LOADING */
+.loading-box { margin-top: 18px; padding: 16px 20px; background: #fffdf5; border: 1px solid #e8d5a3; border-radius: 4px; display: none; }
+.loading-box.show { display: block; }
+.spinner-row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.spinner { width: 18px; height: 18px; border-radius: 50%; border: 3px solid #e8d5a3; border-top-color: #c9a84c; animation: spin .8s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* RESULT */
+.result-wrap { background: #fff; border: 1px solid #d4c9b0; border-radius: 6px; overflow: hidden; box-shadow: 0 4px 20px rgba(26,26,46,0.1); }
+.result-header { background: #1a1a2e; padding: 20px 26px; }
+.result-header h2 { font-family: 'Playfair Display', serif; font-size: 17px; color: #fff; }
+.result-header .sub { font-size: 13px; color: #c9a84c; margin-top: 4px; }
+.score-banner { background: linear-gradient(135deg, #ede8dc, #f5f0e8); padding: 22px 26px; border-bottom: 1px solid #d4c9b0; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.score-circle { width: 84px; height: 84px; border-radius: 50%; background: #1a1a2e; border: 3px solid #c9a84c; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+.score-num { font-family: 'Playfair Display', serif; font-size: 26px; color: #c9a84c; line-height: 1; }
+.score-max { font-family: monospace; font-size: 11px; color: #e8d5a3; }
+.verdict-badge { display: inline-block; padding: 3px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.stamp { border: 3px solid currentColor; padding: 5px 12px; transform: rotate(-5deg); font-family: monospace; font-size: 12px; font-weight: 700; letter-spacing: 2px; opacity: 0.85; margin-left: auto; }
+.result-body { padding: 26px; }
+.rsec { margin-bottom: 22px; }
+.rsec h4 { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px dashed #d4c9b0; }
+.rsec p, .rsec li { font-size: 14px; line-height: 1.9; }
+.rsec ul, .rsec ol { padding-left: 18px; }
+.rsec li { margin-bottom: 3px; }
+.score-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.score-item { background: #f5f0e8; border: 1px solid #d4c9b0; border-radius: 4px; padding: 12px; }
+.score-item .sname { font-size: 11px; color: #888; font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
+.score-item .sval { font-family: monospace; font-size: 17px; font-weight: 700; }
+.score-item .sbar { height: 4px; background: #ede8dc; border-radius: 2px; margin-top: 7px; overflow: hidden; }
+.score-item .sfill { height: 100%; border-radius: 2px; }
+.conclusion-box { background: #ede8dc; padding: 16px; border-radius: 4px; border-left: 4px solid #c9a84c; font-style: italic; font-size: 14px; line-height: 1.9; }
+.result-footer { padding: 13px 26px; background: #ede8dc; border-top: 1px solid #d4c9b0; display: flex; justify-content: space-between; font-size: 11px; color: #999; font-family: monospace; flex-wrap: wrap; gap: 4px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+hr.div { border: none; border-top: 1px solid #ede8dc; margin: 20px 0; }
+
+/* WEAKNESS & RECOMMENDATION DETAIL CARDS */
+.detail-item { background: #fff; border: 1px solid #f0ebe0; border-radius: 4px; padding: 13px 15px; margin-bottom: 10px; border-left: 3px solid #c0392b; }
+.detail-item.rec { border-left-color: #2980b9; }
+.detail-item .di-title { font-weight: 700; font-size: 13px; margin-bottom: 5px; color: #1a1a2e; }
+.detail-item .di-ref { font-size: 11px; color: #c0392b; font-family: monospace; font-weight: 600; margin-bottom: 5px; background: #fdecea; display: inline-block; padding: 1px 7px; border-radius: 3px; }
+.detail-item.rec .di-ref { color: #2980b9; background: #e8f4f8; }
+.detail-item .di-body { font-size: 13px; color: #555; line-height: 1.8; }
+
+/* CUSTOM CRITERIA */
+.custom-row { display: grid; grid-template-columns: 1fr 75px 85px 34px; gap: 8px; margin-bottom: 8px; align-items: center; }
+.add-btn { background: none; border: 1.5px dashed #d4c9b0; border-radius: 4px; padding: 7px 16px; cursor: pointer; font-size: 13px; color: #888; font-family: inherit; margin-top: 4px; }
+.add-btn:hover { border-color: #c9a84c; color: #1a1a2e; }
+.del-btn { background: none; border: none; cursor: pointer; color: #c0392b; font-size: 22px; line-height: 1; }
+
+/* PAGE COUNT SELECTOR */
+.page-group { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 6px; }
+.page-card { border: 2px solid #d4c9b0; border-radius: 6px; padding: 10px 14px; cursor: pointer; background: #faf9f6; transition: all .2s; position: relative; text-align: center; min-width: 80px; }
+.page-card:hover { border-color: #c9a84c; background: #fffdf5; }
+.page-card.selected { border-color: #1a1a2e; background: #f0eee8; }
+.page-card.selected::after { content: '✓'; position: absolute; top: 4px; right: 7px; font-size: 11px; font-weight: 700; color: #1a1a2e; }
+.page-card .pg-range { font-weight: 700; font-size: 13px; color: #1a1a2e; }
+.page-card .pg-note { font-size: 10px; color: #888; margin-top: 2px; }
+.page-chunk-info { font-size: 12px; color: #5a4a1a; background: #fffdf5; border: 1px solid #e8d5a3; border-radius: 4px; padding: 8px 12px; margin-top: 4px; }
+
+/* EXPORT BUTTONS */
+.btn-export-word { background: #2980b9; color: #fff; }
+.btn-export-word:hover { background: #1f618d; }
+.btn-export-pdf { background: #c0392b; color: #fff; }
+.btn-export-pdf:hover { background: #a93226; }
+
+/* LICENSE GATE */
+#licenseGate {
+  position: fixed; inset: 0; background: #1a1a2e;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; flex-direction: column;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(201,168,76,0.05) 28px);
+}
+.license-box {
+  background: #fff; border-radius: 10px; padding: 40px 44px;
+  max-width: 440px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  text-align: center;
+}
+.license-logo { font-size: 48px; margin-bottom: 10px; }
+.license-box h2 { font-family: 'Playfair Display', serif; font-size: 20px; color: #1a1a2e; margin-bottom: 4px; }
+.license-box .sub { font-size: 12px; color: #999; margin-bottom: 28px; letter-spacing: 1px; text-transform: uppercase; font-family: monospace; }
+.license-input-wrap { position: relative; margin-bottom: 14px; }
+.license-input-wrap input {
+  width: 100%; padding: 13px 16px; font-size: 15px; font-family: monospace;
+  border: 2px solid #d4c9b0; border-radius: 6px; text-align: center;
+  background: #f5f0e8; outline: none; transition: border-color .2s;
+}
+.license-input-wrap input:focus { border-color: #c9a84c; }
+.license-input-wrap input::placeholder { font-size: 13px; color: #bbb; font-family: inherit; }
+.btn-license { width: 100%; padding: 13px; background: #1a1a2e; color: #fff; border: none; border-radius: 6px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .2s; }
+.btn-license:hover { background: #2d2d4a; }
+.btn-license:disabled { opacity: 0.6; cursor: not-allowed; }
+.license-status { margin-top: 14px; font-size: 13px; min-height: 20px; }
+.license-status.ok { color: #27ae60; font-weight: 600; }
+.license-status.err { color: #c0392b; font-weight: 600; }
+.license-status.loading { color: #c9a84c; }
+.license-footer { margin-top: 22px; font-size: 11px; color: #ccc; font-family: monospace; }
+.user-badge {
+  background: #ede8dc; border: 1px solid #d4c9b0; border-radius: 20px;
+  padding: 4px 14px; font-size: 12px; font-family: monospace; color: #5a4a1a;
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+}
+.user-badge:hover { background: #e0d8c8; }
+
+/* ASSESSMENT LEVEL SELECTOR */
+.level-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 6px; }
+.level-card { border: 2px solid #d4c9b0; border-radius: 6px; padding: 14px 12px; cursor: pointer; background: #faf9f6; transition: all .2s; position: relative; text-align: center; }
+.level-card:hover { border-color: #c9a84c; background: #fffdf5; }
+.level-card.selected { border-color: #1a1a2e; background: #f0eee8; }
+.level-card.selected::after { content: '✓'; position: absolute; top: 7px; right: 10px; font-size: 13px; font-weight: 700; color: #1a1a2e; }
+.level-card .lv-icon { font-size: 26px; margin-bottom: 7px; }
+.level-card .lv-name { font-weight: 700; font-size: 13px; color: #1a1a2e; margin-bottom: 3px; }
+.level-card .lv-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 8px; border-radius: 10px; margin-bottom: 6px; }
+.level-card .lv-desc { font-size: 11px; color: #888; line-height: 1.6; }
+.lv-badge-truong { background: #e8f4f8; color: #2980b9; }
+.lv-badge-xa { background: #fef9e7; color: #9a7d0a; }
+.lv-badge-tinh { background: #fdecea; color: #c0392b; }
+.level-card[data-lv="truong"].selected { border-color: #2980b9; background: #e8f4f8; }
+.level-card[data-lv="xa"].selected { border-color: #c9a84c; background: #fffdf5; }
+.level-card[data-lv="tinh"].selected { border-color: #c0392b; background: #fdecea; }
+
+@media (max-width: 600px) { .level-group { grid-template-columns: 1fr; } }
+
+@media print {
+  header, .tabs, #pane-setup, #pane-criteria, #pane-input, .btn-row { display: none !important; }
+  #pane-result { display: block !important; }
+  body { background: white; }
+}
+</style>
+</head>
+<body>
+
+<!-- LICENSE GATE -->
+<div id="licenseGate">
+  <div class="license-box">
+    <div class="license-logo">🏫</div>
+    <h2>Trợ Lý Thẩm Định SKKN</h2>
+    <div class="sub">Vui lòng nhập mã kích hoạt để sử dụng</div>
+    <div class="license-input-wrap">
+      <input type="text" id="licenseCode" placeholder="Nhập mã license của bạn..." maxlength="30"
+        onkeydown="if(event.key==='Enter') checkLicense()" autocomplete="off" spellcheck="false">
+    </div>
+    <button class="btn-license" id="licenseBtn" onclick="checkLicense()">🔓 Kích hoạt</button>
+    <div class="license-status" id="licenseStatus"></div>
+    <div class="license-footer">Liên hệ quản trị viên để được cấp mã license</div>
+  </div>
+</div>
+
+<!-- MAIN APP (hidden until licensed) -->
+<div id="mainApp" style="display:none">
+<header>
+  <div class="header-inner">
+    <div class="seal"><img src="logo.png" style="width:85px;height:85px;border-radius:50%;object-fit:cover"></div>
+    <div>
+      <h1>Trợ Lý Thẩm Định Sáng Kiến Kinh Nghiệm</h1>
+      <p>Hệ thống đánh giá tài liệu chuyên môn • Dùng OpenRouter API (miễn phí)</p>
+    </div>
+    <div style="margin-left:auto">
+      <span class="user-badge" id="userBadge" onclick="showUserInfo()" title="Thông tin tài khoản">
+        👤 <span id="userBadgeName">...</span>
+      </span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="goTab('setup',this)">⚙️ Cài đặt</button>
+    <button class="tab" onclick="goTab('criteria',this)">📋 Tiêu chí</button>
+    <button class="tab" onclick="goTab('input',this)">📄 Tài liệu</button>
+    <button class="tab" onclick="goTab('result',this)">📊 Kết quả</button>
+  </div>
+
+  <!-- SETUP -->
+  <div id="pane-setup" class="tab-pane active">
+    <div class="card">
+      <div class="card-title">🔑 API Key OpenRouter (miễn phí)</div>
+      <label>Dán API Key của bạn vào đây <span style="color:#c0392b">*</span></label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input type="password" id="apiKey" placeholder="VD: sk-or-v1-..." style="flex:1">
+        <button class="btn btn-outline" onclick="testKey()" style="white-space:nowrap">✅ Kiểm tra</button>
+      </div>
+      <div id="keyStatus"></div>
+      <div class="alert alert-info" style="margin-top:10px;font-size:12px">
+        🔒 API Key chỉ lưu trong máy bạn, không gửi đi đâu khác.<br>
+        📋 Lấy API Key miễn phí tại: <strong><a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></strong> (đăng ký bằng Google, không cần thẻ)
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🎯 Thông tin thẩm định</div>
+      <label>Hội đồng / Ban thẩm định <span style="color:#aaa;font-weight:400">(tùy chọn)</span></label>
+      <input type="text" id="council" placeholder="VD: Hội đồng thẩm định trường TH số 2 Gia Phú">
+      <div class="gap"></div>
+      <label>Loại tài liệu cần thẩm định</label>
+      <select id="docType">
+        <option value="skkn">Sáng kiến kinh nghiệm (SKKN)</option>
+        <option value="giao_an">Giáo án / Kế hoạch bài dạy</option>
+        <option value="de_tai">Đề tài nghiên cứu khoa học</option>
+        <option value="bao_cao">Báo cáo chuyên đề</option>
+        <option value="khac">Tài liệu khác</option>
+      </select>
+    </div>
+    <div class="card" style="background:#fffdf5;border-left:4px solid #c9a84c">
+      <div style="font-size:13px;color:#5a4a1a;line-height:2.1">
+        <strong>📌 Hướng dẫn sử dụng:</strong><br>
+        <strong>Bước 1:</strong> Lấy API Key OpenRouter miễn phí tại <strong>openrouter.ai/keys</strong> → dán vào ô trên → bấm Kiểm tra<br>
+        <strong>Bước 2:</strong> Điền tên hội đồng → chọn loại tài liệu<br>
+        <strong>Bước 3:</strong> Sang tab <strong>📄 Tài liệu</strong> → dán nội dung SKKN hoặc upload PDF<br>
+        <strong>Bước 4:</strong> Bấm <strong>⚖️ Bắt đầu thẩm định</strong> → chờ 30-60 giây<br>
+        <strong>Bước 5:</strong> Xem kết quả ở tab <strong>📊 Kết quả</strong> → bấm 🖨️ In
+      </div>
+    </div>
+  </div>
+
+  <!-- CRITERIA -->
+  <div id="pane-criteria" class="tab-pane">
+    <div class="card">
+      <div class="card-title">📋 Tiêu chí chuẩn ngành Giáo dục</div>
+      <p style="font-size:12px;color:#888;margin-bottom:14px">Theo Thông tư 22/2023/TT-BGDĐT. Có thể điều chỉnh điểm tối đa.</p>
+      <table id="defaultTable">
+        <thead><tr><th>#</th><th>Tiêu chí</th><th>Điểm tối đa</th><th>Loại</th></tr></thead>
+        <tbody id="defaultBody"></tbody>
+        <tfoot><tr style="background:#f5f0e8">
+          <td colspan="2" style="font-weight:700">TỔNG ĐIỂM TỐI ĐA</td>
+          <td id="totalDisplay" style="font-family:monospace;font-weight:700;color:#c9a84c;font-size:15px">100</td>
+          <td></td>
+         </tr></tfoot>
+       </table>
+    </div>
+    <div class="card">
+      <div class="card-title">✏️ Tiêu chí tùy chỉnh thêm</div>
+      <p style="font-size:12px;color:#aaa;margin-bottom:12px">Thêm tiêu chí đặc thù của đơn vị bạn (không bắt buộc).</p>
+      <div id="customList"></div>
+      <button class="add-btn" onclick="addCustom()">+ Thêm tiêu chí</button>
+    </div>
+  </div>
+
+  <!-- INPUT -->
+  <div id="pane-input" class="tab-pane">
+    <div class="card">
+      <div class="card-title">📄 Nhập nội dung tài liệu cần thẩm định</div>
+
+      <!-- CHON CAP DANH GIA -->
+      <div style="margin-bottom:18px">
+        <label style="margin-bottom:10px">🎚️ Chọn cấp độ đánh giá <span style="color:#c0392b">*</span></label>
+        <div class="level-group">
+          <div class="level-card selected" data-lv="truong" onclick="selectLevel('truong',this)">
+            <div class="lv-icon">🏫</div>
+            <div class="lv-name">Đánh giá cơ bản</div>
+            <span class="lv-badge lv-badge-truong">Cấp Trường</span>
+            <div class="lv-desc">Nhận xét tổng quan, chấm điểm theo tiêu chí cơ bản. Phù hợp xét công nhận sáng kiến cấp trường.</div>
+          </div>
+          <div class="level-card" data-lv="xa" onclick="selectLevel('xa',this)">
+            <div class="lv-icon">🏛️</div>
+            <div class="lv-name">Đánh giá chi tiết</div>
+            <span class="lv-badge lv-badge-xa">Cấp Xã / Huyện</span>
+            <div class="lv-desc">Phân tích sâu từng tiêu chí, dẫn chứng cụ thể, so sánh với bối cảnh địa phương. Yêu cầu cao hơn cấp trường.</div>
+          </div>
+          <div class="level-card" data-lv="tinh" onclick="selectLevel('tinh',this)">
+            <div class="lv-icon">🏆</div>
+            <div class="lv-name">Đánh giá chuyên sâu</div>
+            <span class="lv-badge lv-badge-tinh">Cấp Tỉnh</span>
+            <div class="lv-desc">Thẩm định toàn diện, đánh giá tính khoa học & khả năng nhân rộng, kết luận mang tính chuyên gia cao.</div>
+          </div>
+        </div>
+        <div id="levelDesc" style="font-size:12px;color:#5a4a1a;background:#fffdf5;border:1px solid #e8d5a3;border-radius:4px;padding:8px 12px;margin-top:4px">
+          📘 <strong>Cấp Trường:</strong> AI sẽ nhận xét khái quát, tóm tắt ưu/nhược điểm chính, phù hợp phiếu thẩm định nội bộ trường.
+        </div>
+      </div>
+
+      <!-- CHON SO TRANG -->
+      <div style="margin-bottom:18px">
+        <label style="margin-bottom:10px">📄 Số trang ước tính của tài liệu <span style="color:#c0392b">*</span></label>
+        <div class="page-group" id="pageGroup">
+          <div class="page-card selected" data-pages="5-6" onclick="selectPages('5-6',this)">
+            <div class="pg-range">5–6 trang</div>
+            <div class="pg-note">1 lần gọi</div>
+          </div>
+          <div class="page-card" data-pages="9-10" onclick="selectPages('9-10',this)">
+            <div class="pg-range">9–10 trang</div>
+            <div class="pg-note">1 lần gọi</div>
+          </div>
+          <div class="page-card" data-pages="15" onclick="selectPages('15',this)">
+            <div class="pg-range">~15 trang</div>
+            <div class="pg-note">2 lần gọi</div>
+          </div>
+          <div class="page-card" data-pages="20" onclick="selectPages('20',this)">
+            <div class="pg-range">~20 trang</div>
+            <div class="pg-note">2 lần gọi</div>
+          </div>
+          <div class="page-card" data-pages="25" onclick="selectPages('25',this)">
+            <div class="pg-range">~25 trang</div>
+            <div class="pg-note">3 lần gọi</div>
+          </div>
+          <div class="page-card" data-pages="30" onclick="selectPages('30',this)">
+            <div class="pg-range">~30 trang</div>
+            <div class="pg-note">3 lần gọi</div>
+          </div>
+        </div>
+        <div id="pageDesc" class="page-chunk-info">
+          📋 <strong>5–6 trang:</strong> Tài liệu ngắn — AI đọc toàn bộ trong 1 lần, phù hợp cấp trường.
+        </div>
+      </div>
+
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="modeTextBtn" onclick="setMode('text')">✍️ Dán văn bản</button>
+        <button class="mode-tab" id="modePdfBtn" onclick="setMode('pdf')">📎 Upload PDF</button>
+      </div>
+
+      <div id="modeText">
+        <textarea id="docText" placeholder="Dán toàn bộ nội dung SKKN vào đây...&#10;&#10;Cách làm:&#10;• Mở file Word hoặc PDF trên máy tính&#10;• Nhấn Ctrl+A để chọn tất cả&#10;• Nhấn Ctrl+C để copy&#10;• Bấm vào ô này rồi nhấn Ctrl+V để dán vào" oninput="updateCount()"></textarea>
+        <div style="font-size:12px;color:#aaa;text-align:right;margin-top:4px;font-family:monospace" id="charCount">0 ký tự</div>
+      </div>
+
+      <div id="modePdf" style="display:none">
+        <div class="upload-box" id="uploadBox">
+          <input type="file" accept=".pdf" onchange="handlePdf(event)" id="pdfInput">
+          <div style="font-size:42px;margin-bottom:10px">📁</div>
+          <div style="font-weight:700;font-size:15px;margin-bottom:6px">Kéo thả file PDF vào đây</div>
+          <div style="font-size:13px;color:#aaa">hoặc bấm vào đây để chọn file (tối đa 50MB)</div>
+        </div>
+        <div id="pdfInfo" style="display:none" class="file-info">
+          <span style="font-size:26px">📄</span>
+          <span id="pdfName" style="flex:1;font-weight:600;font-size:14px"></span>
+          <span style="font-size:12px;color:#27ae60;font-weight:600">✅ Sẵn sàng</span>
+          <button onclick="clearPdf()" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:22px">×</button>
+        </div>
+      </div>
+
+      <div id="inputError"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="startBtn" onclick="startAssess()">⚖️ Bắt đầu thẩm định</button>
+        <button class="btn btn-outline" onclick="clearInput()">🗑️ Xóa</button>
+      </div>
+
+      <div class="loading-box" id="loadingBox">
+        <div class="spinner-row">
+          <div class="spinner"></div>
+          <span style="font-size:14px;color:#9a7d0a;font-weight:600" id="loadingMsg">🔍 Đang phân tích tài liệu...</span>
+        </div>
+        <div style="font-size:12px;color:#bbb">Vui lòng chờ khoảng 30–60 giây, đừng tắt trang này...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="pane-result" class="tab-pane">
+    <div id="resultEmpty" style="text-align:center;padding:70px 0;color:#aaa">
+      <div style="font-size:50px;margin-bottom:16px">📊</div>
+      <div style="font-size:15px">Chưa có kết quả thẩm định.</div>
+      <div style="font-size:13px;margin-top:8px">Hãy sang tab <strong style="color:#1a1a2e">📄 Tài liệu</strong> và bấm <strong style="color:#1a1a2e">⚖️ Bắt đầu thẩm định</strong>.</div>
+      <button class="btn btn-primary" style="margin-top:20px" onclick="goTab('input',null)">→ Sang tab Tài liệu</button>
+    </div>
+    <div id="resultContent" style="display:none">
+      <div id="resultCard"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="window.print()">🖨️ In kết quả</button>
+        <button class="btn btn-export-word" onclick="exportWord()">📝 Xuất Word</button>
+        <button class="btn btn-export-pdf" onclick="exportPdf()">📄 Xuất PDF</button>
+        <button class="btn btn-outline" onclick="newAssess()">🔄 Thẩm định tài liệu mới</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end mainApp -->
+
+<script>
+// ===== LICENSE CONFIG =====
+const LICENSE_API = 'https://script.google.com/macros/s/AKfycbwxzAoUUHshUDkJH4urqt3QyH3f1ivANVi8Y-Z9r2Hi-qXCT8Hc5EQ3pRckqQ3p13KK/exec';
+const LICENSE_STORAGE_KEY = 'skkn_license_v1';
+let currentUser = null;
+
+async function checkLicense() {
+  const code = document.getElementById('licenseCode').value.trim();
+  if (!code) { setLicenseStatus('Vui lòng nhập mã license!', 'err'); return; }
+
+  document.getElementById('licenseBtn').disabled = true;
+  setLicenseStatus('⏳ Đang xác thực...', 'loading');
+
+  try {
+    const res = await fetch(LICENSE_API + '?code=' + encodeURIComponent(code));
+    const data = await res.json();
+
+    if (!data.found) {
+      setLicenseStatus('❌ Mã license không tồn tại!', 'err');
+    } else if (data.status === 'blocked') {
+      setLicenseStatus('🚫 Tài khoản đã bị khóa. Liên hệ quản trị viên.', 'err');
+    } else if (!data.valid) {
+      setLicenseStatus(`⏰ License đã hết hạn từ ${data.expiry}. Liên hệ gia hạn.`, 'err');
+    } else {
+      // Valid — save to localStorage
+      const session = { code, name: data.name, expiry: data.expiry, daysLeft: data.daysLeft, checkedAt: Date.now() };
+      localStorage.setItem(LICENSE_STORAGE_KEY, JSON.stringify(session));
+      setLicenseStatus(`✅ Xác thực thành công! Chào ${data.name}`, 'ok');
+      setTimeout(() => unlockApp(session), 900);
+    }
+  } catch(e) {
+    setLicenseStatus('🌐 Lỗi kết nối. Kiểm tra internet và thử lại.', 'err');
+  } finally {
+    document.getElementById('licenseBtn').disabled = false;
+  }
+}
+
+function setLicenseStatus(msg, type) {
+  const el = document.getElementById('licenseStatus');
+  el.textContent = msg;
+  el.className = 'license-status ' + (type||'');
+}
+
+function unlockApp(session) {
+  currentUser = session;
+  document.getElementById('licenseGate').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('userBadgeName').textContent = session.name + (session.daysLeft <= 30 ? ` (còn ${session.daysLeft} ngày)` : '');
+}
+
+function showUserInfo() {
+  if (!currentUser) return;
+  const d = currentUser.daysLeft;
+  const warn = d <= 30 ? `\n⚠️ Còn ${d} ngày — hãy liên hệ gia hạn!` : `\n✅ Còn ${d} ngày sử dụng`;
+  if (confirm(`👤 ${currentUser.name}\n📋 Mã: ${currentUser.code}\n📅 Hạn: ${currentUser.expiry}${warn}\n\nBấm OK để đăng xuất (yêu cầu nhập lại mã lần sau)`)) {
+    localStorage.removeItem(LICENSE_STORAGE_KEY);
+    location.reload();
+  }
+}
+
+function initLicense() {
+  const saved = localStorage.getItem(LICENSE_STORAGE_KEY);
+  if (!saved) return;
+  try {
+    const session = JSON.parse(saved);
+    // Re-verify online every 24h, otherwise use cached
+    const hoursSince = (Date.now() - session.checkedAt) / 3600000;
+    if (hoursSince < 24) {
+      // Quick local expiry check
+      const expiry = new Date(session.expiry);
+      const today = new Date();
+      const daysLeft = Math.ceil((expiry - today) / (1000*60*60*24));
+      if (daysLeft > 0) {
+        session.daysLeft = daysLeft;
+        unlockApp(session);
+        return;
+      }
+    }
+    // Re-verify online
+    document.getElementById('licenseCode').value = session.code;
+    checkLicense();
+  } catch(e) {
+    localStorage.removeItem(LICENSE_STORAGE_KEY);
+  }
+}
+
+// ===== DATA =====
+const CRITERIA = [
+  {id:'c1', name:'Tính mới và sáng tạo', desc:'Giải pháp có điểm mới, khác biệt so với cách làm cũ', max:25, req:true},
+  {id:'c2', name:'Tính khoa học', desc:'Cơ sở lý luận vững chắc, phương pháp nghiên cứu hợp lý', max:20, req:true},
+  {id:'c3', name:'Tính thực tiễn', desc:'Xuất phát từ thực tế, giải quyết vấn đề cụ thể', max:20, req:true},
+  {id:'c4', name:'Hiệu quả áp dụng', desc:'Kết quả đạt được, dữ liệu minh chứng rõ ràng', max:20, req:true},
+  {id:'c5', name:'Khả năng nhân rộng', desc:'Có thể áp dụng ở nhiều đơn vị tương tự', max:10, req:false},
+  {id:'c6', name:'Hình thức trình bày', desc:'Bố cục rõ ràng, văn phong chuẩn, đúng quy định', max:5, req:false},
+];
+const DOC_NAMES = {skkn:'Sáng kiến kinh nghiệm (SKKN)', giao_an:'Giáo án', de_tai:'Đề tài nghiên cứu', bao_cao:'Báo cáo chuyên đề', khac:'Tài liệu'};
+const VERDICT_STYLE = {
+  'Xuất sắc': {bg:'#d5f5e3', color:'#1e8449', border:'#27ae60'},
+  'Tốt':      {bg:'#d6eaf8', color:'#1a5276', border:'#2980b9'},
+  'Đạt':      {bg:'#fef9e7', color:'#9a7d0a', border:'#f0c30f'},
+  'Không đạt':{bg:'#fdecea', color:'#922b21', border:'#c0392b'},
+};
+let customCriteria = [];
+let pdfBase64 = null;
+let inputMode = 'text';
+let pdfTextContent = null;
+let assessLevel = 'truong'; // truong | xa | tinh
+let selectedPages = '5-6'; // page range selection
+
+// Cấu hình số trang → số ký tự & số chunk
+const PAGE_CONFIG = {
+  '5-6':  { label: '5–6 trang',  chars: 9000,  chunks: 1, hint: '📋 <strong>5–6 trang:</strong> Tài liệu ngắn — AI đọc toàn bộ trong 1 lần, phù hợp cấp trường.' },
+  '9-10': { label: '9–10 trang', chars: 15000, chunks: 1, hint: '📋 <strong>9–10 trang:</strong> Tài liệu vừa — AI đọc toàn bộ trong 1 lần, phân tích đầy đủ.' },
+  '15':   { label: '~15 trang',  chars: 24000, chunks: 2, hint: '📋 <strong>~15 trang:</strong> Tài liệu trung bình — AI đọc 2 lần (chia đôi), rồi tổng hợp kết quả.' },
+  '20':   { label: '~20 trang',  chars: 32000, chunks: 2, hint: '📋 <strong>~20 trang:</strong> Tài liệu dài — AI đọc 2 lần, tổng hợp chi tiết từng phần.' },
+  '25':   { label: '~25 trang',  chars: 40000, chunks: 3, hint: '📋 <strong>~25 trang:</strong> Tài liệu rất dài — AI đọc 3 lần (chia 3 phần), sau đó tổng hợp toàn diện.' },
+  '30':   { label: '~30 trang',  chars: 48000, chunks: 3, hint: '📋 <strong>~30 trang:</strong> Tài liệu rất dài — AI đọc 3 lần, đánh giá toàn diện nhất.' },
+};
+
+// Cấu hình theo cấp đánh giá
+const LEVEL_CONFIG = {
+  truong: {
+    label: 'Cấp Trường',
+    descHint: '📘 <strong>Cấp Trường:</strong> AI sẽ nhận xét khái quát, tóm tắt ưu/nhược điểm chính, phù hợp phiếu thẩm định nội bộ trường.',
+    role: 'chuyên viên thẩm định nội bộ cấp trường',
+    detailLevel: `- Nhận xét mỗi tiêu chí: 1-2 câu khái quát, rõ ràng.
+- Ưu điểm: nêu 3-4 điểm nổi bật nhất.
+- Hạn chế: nêu 2-3 điểm, chỉ rõ vị trí trong tài liệu.
+- Đề xuất: 2-3 khuyến nghị thiết thực.
+- Kết luận: 3-4 câu tổng kết, phù hợp văn phong hội đồng cấp trường.`,
+    conclusionLen: 'Kết luận 3-4 câu',
+    docLen: 6000,
+    maxTokens: 2500,
+  },
+  xa: {
+    label: 'Cấp Xã / Huyện',
+    descHint: '🏛️ <strong>Cấp Xã/Huyện:</strong> AI sẽ phân tích chi tiết từng tiêu chí, dẫn chứng cụ thể từ nội dung, so sánh với yêu cầu địa phương.',
+    role: 'chuyên viên thẩm định cấp xã/huyện, có kinh nghiệm đánh giá sáng kiến giáo dục địa phương',
+    detailLevel: `- Nhận xét mỗi tiêu chí: 2-4 câu, có dẫn chứng cụ thể từ nội dung tài liệu (trích dẫn ý hoặc chỉ rõ mục).
+- Ưu điểm: nêu 4-5 điểm, mỗi điểm có giải thích và dẫn chứng cụ thể.
+- Hạn chế: nêu 3-4 điểm, chỉ rõ vị trí (mục, đoạn, bảng) và phân tích tại sao đó là hạn chế.
+- Đề xuất cải tiến: 3-4 khuyến nghị cụ thể, chỉ rõ cần bổ sung/chỉnh sửa gì ở mục nào.
+- Kết luận: 4-6 câu đánh giá toàn diện, nhận định về tiềm năng áp dụng tại địa phương.`,
+    conclusionLen: 'Kết luận 4-6 câu',
+    docLen: 8000,
+    maxTokens: 3500,
+  },
+  tinh: {
+    label: 'Cấp Tỉnh',
+    descHint: '🏆 <strong>Cấp Tỉnh:</strong> AI sẽ thẩm định chuyên sâu toàn diện, phân tích tính khoa học, đối chiếu lý luận, đánh giá khả năng nhân rộng toàn tỉnh.',
+    role: 'chuyên gia thẩm định cấp tỉnh, thành viên hội đồng khoa học giáo dục tỉnh, có chuyên môn cao về nghiên cứu và đánh giá sáng kiến giáo dục',
+    detailLevel: `- Nhận xét mỗi tiêu chí: 3-5 câu phân tích chuyên sâu, có dẫn chứng cụ thể, đối chiếu với lý luận khoa học giáo dục và thực tiễn.
+- Ưu điểm: nêu 5-6 điểm nổi bật, mỗi điểm phân tích sâu giá trị khoa học và thực tiễn của điểm đó.
+- Hạn chế: nêu 4-5 điểm, chỉ rõ vị trí (mục/đoạn/bảng/hình), phân tích mức độ ảnh hưởng đến chất lượng tổng thể.
+- Đề xuất cải tiến: 4-5 khuyến nghị chi tiết theo hướng nâng tầm nghiên cứu, có thể kèm gợi ý về tài liệu tham khảo hoặc phương pháp bổ sung.
+- Kết luận: 5-8 câu mang tính nhận định chuyên gia, đánh giá toàn diện về giá trị khoa học, thực tiễn, và khả năng nhân rộng trong toàn tỉnh. Phải thể hiện quan điểm rõ ràng của hội đồng chuyên môn.`,
+    conclusionLen: 'Kết luận 5-8 câu chuyên sâu mang tính chuyên gia',
+    docLen: 10000,
+    maxTokens: 4000,
+  },
+};
+
+function selectLevel(lv, el) {
+  assessLevel = lv;
+  document.querySelectorAll('.level-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('levelDesc').innerHTML = LEVEL_CONFIG[lv].descHint;
+}
+
+function selectPages(pg, el) {
+  selectedPages = pg;
+  document.querySelectorAll('.page-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('pageDesc').innerHTML = PAGE_CONFIG[pg].hint;
+}
+
+// ===== DANH SÁCH MODEL MIỄN PHÍ TRÊN OPENROUTER =====
+const FREE_MODELS = [
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'google/gemma-4-31b-it:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'openai/gpt-oss-120b:free',
+  'qwen/qwen3-coder:free',
+  'meta-llama/llama-3.2-3b-instruct:free',
+  'openrouter/free',
+];
+
+// ===== INIT =====
+window.onload = () => {
+  initLicense();
+  renderCriteria();
+  const saved = localStorage.getItem('skkn_key');
+  if (saved) document.getElementById('apiKey').value = saved;
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  script.onload = () => { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; };
+  document.head.appendChild(script);
+};
+
+function renderCriteria() {
+  const tbody = document.getElementById('defaultBody');
+  tbody.innerHTML = '';
+  CRITERIA.forEach((c,i) => {
+    tbody.innerHTML += `<tr>
+      <td style="font-family:monospace;color:#bbb;font-weight:700">${i+1}</td>
+      <td><div style="font-weight:600">${c.name}</div><div style="font-size:11px;color:#999;margin-top:2px">${c.desc}</div></td>
+      <td><input type="number" min="1" max="100" value="${c.max}" id="max_${c.id}" onchange="updateTotal()"></td>
+      <td><span class="badge ${c.req?'badge-req':'badge-opt'}">${c.req?'Bắt buộc':'Phụ'}</span></td>
+    </tr>`;
+  });
+  updateTotal();
+}
+
+function updateTotal() {
+  let t = 0;
+  CRITERIA.forEach(c => { t += +(document.getElementById('max_'+c.id)?.value||c.max); });
+  customCriteria.forEach(c => { t += c.max||0; });
+  document.getElementById('totalDisplay').textContent = t;
+}
+
+function addCustom() {
+  const id = 'cc_'+Date.now();
+  customCriteria.push({id, name:'', max:10, req:false});
+  renderCustom();
+}
+function renderCustom() {
+  const el = document.getElementById('customList');
+  el.innerHTML = '';
+  customCriteria.forEach((c,i) => {
+    el.innerHTML += `<div class="custom-row">
+      <input type="text" placeholder="Tên tiêu chí..." value="${c.name}" oninput="customCriteria[${i}].name=this.value">
+      <input type="number" min="1" max="100" value="${c.max}" oninput="customCriteria[${i}].max=+this.value;updateTotal()">
+      <select onchange="customCriteria[${i}].req=this.value==='true'">
+        <option value="false" ${c.req?'':'selected'}>Phụ thêm</option>
+        <option value="true" ${c.req?'selected':''}>Bắt buộc</option>
+      </select>
+      <button class="del-btn" onclick="customCriteria.splice(${i},1);renderCustom();updateTotal()">×</button>
+    </div>`;
+  });
+  updateTotal();
+}
+
+// ===== TABS =====
+function goTab(id, el) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('pane-'+id).classList.add('active');
+  if (el) el.classList.add('active');
+  else document.querySelectorAll('.tab').forEach((t,i) => { if(['setup','criteria','input','result'][i]===id) t.classList.add('active'); });
+}
+
+// ===== INPUT MODE =====
+function setMode(m) {
+  inputMode = m;
+  document.getElementById('modeText').style.display = m==='text'?'block':'none';
+  document.getElementById('modePdf').style.display = m==='pdf'?'block':'none';
+  document.getElementById('modeTextBtn').classList.toggle('active', m==='text');
+  document.getElementById('modePdfBtn').classList.toggle('active', m==='pdf');
+}
+function updateCount() {
+  document.getElementById('charCount').textContent = document.getElementById('docText').value.length.toLocaleString()+' ký tự';
+}
+function clearInput() {
+  document.getElementById('docText').value='';
+  document.getElementById('charCount').textContent='0 ký tự';
+  clearPdf();
+  document.getElementById('inputError').innerHTML='';
+}
+async function handlePdf(e) {
+  const f = e.target.files[0];
+  if(!f) return;
+  if(f.size > 50*1024*1024){showError('inputError','File quá lớn! Tối đa 50MB.');return;}
+
+  showError('inputError','');
+  document.getElementById('loadingBox').classList.add('show');
+  document.getElementById('loadingMsg').textContent = '📄 Đang đọc file PDF...';
+
+  try {
+    const arrayBuffer = await f.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const totalPages = pdf.numPages;
+
+    // Determine page limit based on selected page range
+    const pgCfg = PAGE_CONFIG[selectedPages];
+    // Estimate pages to read: use all pages but cap text extraction smartly
+    let fullText = '';
+    let pagesRead = 0;
+
+    for (let i = 1; i <= totalPages; i++) {
+      document.getElementById('loadingMsg').textContent = `📄 Đang đọc trang ${i}/${totalPages}...`;
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ').trim();
+      if (pageText) {
+        fullText += `\n[Trang ${i}]\n` + pageText + '\n';
+        pagesRead++;
+      }
+      // Stop if we have enough text (prevent API overload beyond selected page range)
+      if (fullText.length > pgCfg.chars * 1.2) {
+        document.getElementById('loadingMsg').textContent = `📄 Đã đọc đủ nội dung (${pagesRead}/${totalPages} trang có văn bản)...`;
+        break;
+      }
+    }
+
+    if (!fullText.trim()) {
+      showError('inputError', '⚠️ PDF này có vẻ là file scan (ảnh chụp), không chứa văn bản. Vui lòng dùng PDF có văn bản thật hoặc dán văn bản vào tab "Dán văn bản".');
+      clearPdf();
+      return;
+    }
+
+    pdfTextContent = fullText;
+    document.getElementById('pdfName').textContent = `${f.name} (${totalPages} trang, đọc được ${pagesRead} trang có văn bản, ~${Math.round(fullText.length/1000)}K ký tự)`;
+    document.getElementById('pdfInfo').style.display='flex';
+    document.getElementById('uploadBox').style.display='none';
+  } catch(err) {
+    showError('inputError', 'Lỗi đọc PDF: ' + err.message);
+    clearPdf();
+  } finally {
+    document.getElementById('loadingBox').classList.remove('show');
+  }
+}
+function clearPdf() {
+  pdfTextContent = null;
+  document.getElementById('pdfInput').value='';
+  document.getElementById('pdfInfo').style.display='none';
+  document.getElementById('uploadBox').style.display='block';
+}
+
+// ===== GỌI OPENROUTER API =====
+async function callOpenRouter(prompt, retryCount = 0) {
+  const key = document.getElementById('apiKey').value.trim();
+  if(!key) throw new Error('Chưa nhập API Key');
+  
+  for (const model of FREE_MODELS) {
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+          'HTTP-Referer': window.location.href,
+          'X-Title': 'TroLyThamDinhSKKN'
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 4000,
+          temperature: 0.2
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status === 401) throw new Error('API Key không hợp lệ');
+        throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.choices && data.choices[0] && data.choices[0].message.content) {
+        return data.choices[0].message.content;
+      }
+      throw new Error('Không nhận được phản hồi từ AI');
+    } catch (e) {
+      if (e.message.includes('API Key')) throw e;
+      console.warn(`Model ${model} thất bại:`, e.message);
+    }
+  }
+  throw new Error('Tất cả model đều không hoạt động. Vui lòng thử lại sau.');
+}
+
+// ===== TEST API =====
+async function testKey() {
+  const key = document.getElementById('apiKey').value.trim();
+  if(!key){showStatus('❌ Vui lòng nhập API Key!','error');return;}
+  showStatus('⏳ Đang kiểm tra...','');
+  try {
+    const result = await callOpenRouter('Trả lời đúng 1 câu bằng tiếng Việt: "OK"');
+    if(result) {
+      localStorage.setItem('skkn_key',key);
+      showStatus('✅ Kết nối thành công! API Key OpenRouter hợp lệ.','success');
+    } else {
+      showStatus('❌ API Key không hợp lệ hoặc hết quota','error');
+    }
+  } catch(e){
+    showStatus('❌ Lỗi: '+e.message,'error');
+  }
+}
+function showStatus(msg,type){
+  const el=document.getElementById('keyStatus');
+  el.innerHTML=`<div class="alert alert-${type==='error'?'error':type==='success'?'success':'info'}">${msg}</div>`;
+}
+function showError(id,msg){
+  document.getElementById(id).innerHTML=msg?`<div class="alert alert-error">❌ ${msg}</div>`:'';
+}
+
+// ===== ASSESSMENT (with chunking) =====
+async function startAssess() {
+  const key = document.getElementById('apiKey').value.trim();
+  if(!key){alert('Vui lòng nhập API Key ở tab Cài đặt!');goTab('setup',null);return;}
+  
+  let docContent = '';
+  if(inputMode==='text') {
+    docContent = document.getElementById('docText').value.trim();
+    if(!docContent){showError('inputError','Vui lòng dán nội dung tài liệu vào ô văn bản!');return;}
+  } else {
+    if(!pdfTextContent){showError('inputError','Vui lòng upload file PDF!');return;}
+    docContent = pdfTextContent;
+  }
+  showError('inputError','');
+
+  const allC = [...CRITERIA.map(c=>({...c, max:+(document.getElementById('max_'+c.id)?.value||c.max)})),
+                ...customCriteria.filter(c=>c.name.trim())];
+  const totalMax = allC.reduce((s,c)=>s+c.max,0);
+  const criteriaText = allC.map((c,i)=>`${i+1}. **${c.name}** (tối đa ${c.max} điểm${c.req?' - Bắt buộc':''}): ${c.desc||''}`).join('\n');
+  const council = document.getElementById('council').value;
+  const docType = document.getElementById('docType').value;
+  const docTypeName = DOC_NAMES[docType]||'Tài liệu';
+  const lv = LEVEL_CONFIG[assessLevel];
+  const pgCfg = PAGE_CONFIG[selectedPages];
+
+  document.getElementById('startBtn').disabled=true;
+  document.getElementById('loadingBox').classList.add('show');
+
+  const numChunks = pgCfg.chunks;
+  const maxDocChars = pgCfg.chars;
+  const docTrimmed = docContent.substring(0, maxDocChars);
+
+  try {
+    let result;
+    if (numChunks === 1) {
+      // --- SINGLE CALL ---
+      const msgs=['🔍 Đang đọc và phân tích nội dung...','✍️ Đang chấm điểm từng tiêu chí...','📝 Đang viết nhận xét chi tiết...','📊 Đang tổng hợp kết quả...'];
+      let mi=0;
+      const iv=setInterval(()=>{mi=(mi+1)%msgs.length;document.getElementById('loadingMsg').textContent=msgs[mi];},7000);
+      document.getElementById('loadingMsg').textContent=msgs[0];
+      const prompt = buildPrompt(docTrimmed, criteriaText, totalMax, allC, lv, council, docTypeName);
+      const raw = await callOpenRouter(prompt);
+      clearInterval(iv);
+      const clean = raw.replace(/```json|```/g,'').trim();
+      result = JSON.parse(clean);
+    } else {
+      // --- CHUNKING: split into numChunks parts ---
+      const chunkSize = Math.ceil(docTrimmed.length / numChunks);
+      const chunks = [];
+      for (let i = 0; i < numChunks; i++) {
+        chunks.push(docTrimmed.substring(i*chunkSize, (i+1)*chunkSize));
+      }
+
+      // Pass 1: analyse each chunk for scores & notes
+      let chunkNotes = [];
+      for (let i = 0; i < chunks.length; i++) {
+        document.getElementById('loadingMsg').textContent = `🔍 Đang phân tích phần ${i+1}/${numChunks}...`;
+        const chunkPrompt = `Bạn là ${lv.role}. Đây là PHẦN ${i+1}/${numChunks} của ${docTypeName} (tài liệu dài). Hãy đọc và ghi nhận các điểm quan trọng liên quan đến các tiêu chí sau:\n\n${criteriaText}\n\nPHẦN ${i+1}/${numChunks}:\n---\n${chunks[i]}\n---\n\nHãy trả về JSON với format:\n{"part":${i+1},"observations":"nhận xét chi tiết về nội dung phần này liên quan đến từng tiêu chí (tối thiểu 200 từ)","keyPoints":["điểm nổi bật 1","điểm nổi bật 2","điểm nổi bật 3"]}\n(chỉ trả JSON thuần, không markdown)`;
+        const raw = await callOpenRouter(chunkPrompt);
+        const clean = raw.replace(/```json|```/g,'').trim();
+        try { chunkNotes.push(JSON.parse(clean)); } catch(e) { chunkNotes.push({part:i+1,observations:raw,keyPoints:[]}); }
+      }
+
+      // Pass 2: synthesize all chunk notes into final assessment
+      document.getElementById('loadingMsg').textContent = `📊 Đang tổng hợp và chấm điểm toàn bộ tài liệu...`;
+      const synthContext = chunkNotes.map(n=>`--- PHẦN ${n.part}/${numChunks} ---\n${n.observations}\nĐiểm nổi bật: ${(n.keyPoints||[]).join('; ')}`).join('\n\n');
+      const synthPrompt = buildPrompt(synthContext, criteriaText, totalMax, allC, lv, council, docTypeName, true, numChunks);
+      const synthRaw = await callOpenRouter(synthPrompt);
+      const synthClean = synthRaw.replace(/```json|```/g,'').trim();
+      result = JSON.parse(synthClean);
+    }
+
+    lastResult = result;
+    lastMeta = { council, docTypeName, levelLabel: lv.label };
+    renderResult(result, council, docTypeName, lv.label);
+    goTab('result',null);
+  } catch(e){
+    showError('inputError','Có lỗi xảy ra: '+e.message+'. Vui lòng thử lại.');
+  } finally {
+    document.getElementById('startBtn').disabled=false;
+    document.getElementById('loadingBox').classList.remove('show');
+  }
+}
+
+function buildPrompt(docContent, criteriaText, totalMax, allC, lv, council, docTypeName, isSynthesis=false, totalParts=1) {
+  const synthNote = isSynthesis ? `\n(Lưu ý: Nội dung dưới đây là TỔNG HỢP ghi chú phân tích từ ${totalParts} phần của tài liệu, không phải tài liệu gốc. Hãy đánh giá dựa trên toàn bộ thông tin này.)\n` : '';
+  return `Bạn là ${lv.role}${council?', thành viên của '+council:''}, thực hiện thẩm định ${docTypeName} theo tiêu chuẩn ${lv.label}.
+${synthNote}
+Nhiệm vụ: Phân tích và chấm điểm tài liệu theo đúng bộ tiêu chí sau:
+
+${criteriaText}
+
+TỔNG ĐIỂM TỐI ĐA: ${totalMax} điểm
+
+THANG XẾP LOẠI:
+- Xuất sắc: ≥90% tổng điểm
+- Tốt: 75-89% tổng điểm
+- Đạt: 60-74% tổng điểm
+- Không đạt: <60% tổng điểm
+
+YÊU CẦU MỨC ĐỘ PHÂN TÍCH (${lv.label.toUpperCase()}):
+${lv.detailLevel}
+
+Tài liệu cần thẩm định:
+---
+${docContent}
+---
+
+YÊU CẦU BẮT BUỘC VỀ PHẦN HẠN CHẾ VÀ ĐỀ XUẤT:
+
+1. Với mỗi hạn chế (weaknesses), bạn PHẢI cung cấp:
+   - "point": tên hạn chế ngắn gọn (5-10 từ)
+   - "location": chỉ rõ vị trí cụ thể trong tài liệu (VD: "Mục II - Cơ sở lý luận", "Phần kết quả, đoạn 3", "Bảng số liệu trang X", "Mục giải pháp thứ 2"...)
+   - "detail": mô tả chi tiết hạn chế đó là gì, biểu hiện cụ thể như thế nào trong tài liệu (2-3 câu)
+
+2. Với mỗi đề xuất cải tiến (recommendations), bạn PHẢI cung cấp:
+   - "point": tên đề xuất ngắn gọn (5-10 từ)
+   - "target": chỉ rõ cần cải tiến ở phần nào, mục nào trong tài liệu (VD: "Mục III - Giải pháp", "Phần kết luận", "Toàn bộ phần minh chứng"...)
+   - "detail": hướng dẫn cụ thể cần làm gì để cải tiến, bổ sung hay chỉnh sửa ra sao (2-3 câu)
+
+Hãy trả về kết quả theo đúng định dạng JSON sau (chỉ trả về JSON thuần, không markdown, không giải thích thêm):
+{
+  "title": "tên tài liệu",
+  "author": "tên tác giả hoặc để trống",
+  "summary": "tóm tắt 3-4 câu",
+  "scores": [
+    ${allC.map(c => `{"id":"${c.id}","name":"${c.name}","score":0,"max":${c.max},"comment":"nhận xét chi tiết"}`).join(',\n    ')}
+  ],
+  "total": 0,
+  "totalMax": ${totalMax},
+  "verdict": "Xuất sắc hoặc Tốt hoặc Đạt hoặc Không đạt",
+  "strengths": ["ưu điểm 1","ưu điểm 2","ưu điểm 3"],
+  "weaknesses": [
+    {"point":"tên hạn chế","location":"vị trí cụ thể trong tài liệu","detail":"mô tả chi tiết hạn chế"}
+  ],
+  "recommendations": [
+    {"point":"tên đề xuất","target":"mục/phần cần cải tiến","detail":"hướng dẫn cụ thể cần làm gì"}
+  ],
+  "conclusion": "${lv.conclusionLen} chuyên nghiệp"
+}`;}
+
+function renderResult(r, council, docTypeName, levelLabel) {
+  lastResult = r;
+  lastMeta = { council, docTypeName, levelLabel };
+  const now=new Date().toLocaleString('vi-VN');
+  const pct=Math.round(r.total/r.totalMax*100);
+  const vs=VERDICT_STYLE[r.verdict]||VERDICT_STYLE['Đạt'];
+
+  const scoresGrid=(r.scores||[]).map(s=>{
+    const p=Math.round(s.score/s.max*100);
+    const fc=p>=80?'#27ae60':p>=60?'#c9a84c':'#c0392b';
+    return `<div class="score-item">
+      <div class="sname">${s.name}</div>
+      <div class="sval">${s.score}<span style="font-size:11px;color:#aaa">/${s.max}</span></div>
+      <div class="sbar"><div class="sfill" style="width:${p}%;background:${fc}"></div></div>
+    </div>`;
+  }).join('');
+
+  const scoresTable=(r.scores||[]).map((s,i)=>`<tr>
+    <td style="font-family:monospace;color:#bbb">${i+1}</td>
+    <td style="font-weight:600">${s.name}</td>
+    <td style="font-family:monospace;font-weight:700">${s.score}/${s.max}</td>
+    <td style="color:#555;line-height:1.7">${s.comment||''}</td>
+   </tr>`).join('');
+
+  const strengths=(r.strengths||[]).map(s=>`<li>${s}</li>`).join('');
+
+  // Render hạn chế dạng thẻ chi tiết (hỗ trợ cả format cũ lẫn mới)
+  const weaknesses=(r.weaknesses||[]).map((w,i)=>{
+    if(typeof w === 'string') {
+      return `<div class="detail-item"><div class="di-title">${w}</div></div>`;
+    }
+    return `<div class="detail-item">
+      <div class="di-title">${i+1}. ${w.point||w}</div>
+      ${w.location?`<div class="di-ref">📍 ${w.location}</div>`:''}
+      ${w.detail?`<div class="di-body">${w.detail}</div>`:''}
+    </div>`;
+  }).join('');
+
+  // Render đề xuất dạng thẻ chi tiết (hỗ trợ cả format cũ lẫn mới)
+  const recs=(r.recommendations||[]).map((rec,i)=>{
+    if(typeof rec === 'string') {
+      return `<div class="detail-item rec"><div class="di-title">${rec}</div></div>`;
+    }
+    return `<div class="detail-item rec">
+      <div class="di-title">${i+1}. ${rec.point||rec}</div>
+      ${rec.target?`<div class="di-ref">🎯 ${rec.target}</div>`:''}
+      ${rec.detail?`<div class="di-body">${rec.detail}</div>`:''}
+    </div>`;
+  }).join('');
+
+  const code='SKKN-'+Math.random().toString(36).slice(2,8).toUpperCase();
+
+  document.getElementById('resultCard').innerHTML=`
+  <div class="result-wrap">
+    <div class="result-header">
+      <h2>📊 Phiếu thẩm định ${docTypeName}</h2>
+      <div class="sub">${r.title||'(không rõ tên)'}${r.author?' — '+r.author:''} &nbsp;|&nbsp; <span style="background:rgba(201,168,76,0.25);padding:1px 8px;border-radius:10px;font-size:11px;letter-spacing:1px">${levelLabel||'Cấp Trường'}</span></div>
+    </div>
+    <div class="score-banner">
+      <div class="score-circle">
+        <div class="score-num">${r.total}</div>
+        <div class="score-max">/${r.totalMax}</div>
+      </div>
+      <div style="flex:1;min-width:160px">
+        <span class="verdict-badge" style="background:${vs.bg};color:${vs.color}">${r.verdict}</span>
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;margin-bottom:2px">${r.title||'Tài liệu thẩm định'}</div>
+        ${r.author?`<div style="font-size:13px;color:#666">Tác giả: ${r.author}</div>`:''}
+        <div style="font-size:12px;color:#999;margin-top:2px">Đạt ${pct}%${council?' | '+council:''}</div>
+      </div>
+      <div class="stamp" style="color:${vs.border}">${r.verdict.toUpperCase()}</div>
+    </div>
+    <div class="result-body">
+      ${r.summary?`<div class="rsec"><h4>📝 Tóm tắt nội dung</h4><p>${r.summary}</p></div>`:''}
+      <div class="rsec">
+        <h4>📊 Điểm từng tiêu chí</h4>
+        <div class="score-grid">${scoresGrid}</div>
+        <table>
+          <thead><tr><th>#</th><th>Tiêu chí</th><th>Điểm</th><th>Nhận xét chi tiết</th></tr></thead>
+          <tbody>${scoresTable}</tbody>
+          <tfoot><tr style="background:#1a1a2e">
+            <td colspan="2" style="color:#fff;font-weight:700;padding:11px 12px">TỔNG ĐIỂM</td>
+            <td style="color:#c9a84c;font-family:monospace;font-size:16px;font-weight:700;padding:11px 12px">${r.total}/${r.totalMax}</td>
+            <td style="color:#c9a84c;font-weight:700;padding:11px 12px">${r.verdict}</td>
+           </tr></tfoot>
+        </table>
+      </div>
+      <hr class="div">
+      <div class="rsec"><h4 style="color:#27ae60">✅ Ưu điểm</h4><ul style="color:#333">${strengths}</ul></div>
+      <hr class="div">
+      <div class="rsec">
+        <h4 style="color:#c0392b">⚠️ Hạn chế <span style="font-size:11px;font-weight:400;font-family:monospace;color:#aaa">(có chỉ rõ vị trí trong tài liệu)</span></h4>
+        ${weaknesses}
+      </div>
+      <hr class="div">
+      <div class="rsec">
+        <h4 style="color:#2980b9">💡 Đề xuất cải tiến <span style="font-size:11px;font-weight:400;font-family:monospace;color:#aaa">(có chỉ rõ mục cần sửa)</span></h4>
+        ${recs}
+      </div>
+      <hr class="div">
+      <div class="rsec"><h4>📜 Kết luận của Hội đồng</h4><div class="conclusion-box">${r.conclusion||''}</div></div>
+    </div>
+    <div class="result-footer">
+      <span>${council||'Hội đồng thẩm định'}</span>
+      <span>Phiếu: ${code} | ${now}</span>
+    </div>
+  </div>`;
+
+  document.getElementById('resultEmpty').style.display='none';
+  document.getElementById('resultContent').style.display='block';
+}
+
+let lastResult = null;
+let lastMeta = {};
+
+function newAssess(){
+  document.getElementById('resultEmpty').style.display='block';
+  document.getElementById('resultContent').style.display='none';
+  clearInput();
+  goTab('input',null);
+}
+
+// ===== EXPORT WORD =====
+function exportWord() {
+  if (!lastResult) { alert('Chưa có kết quả để xuất!'); return; }
+  const r = lastResult;
+  const { council, docTypeName, levelLabel } = lastMeta;
+  const now = new Date().toLocaleString('vi-VN');
+  const pct = Math.round(r.total / r.totalMax * 100);
+
+  const scoresRows = (r.scores||[]).map((s,i) =>
+    `<tr><td>${i+1}</td><td>${s.name}</td><td>${s.score}/${s.max}</td><td>${s.comment||''}</td></tr>`
+  ).join('');
+
+  const strengths = (r.strengths||[]).map(s=>`<li>${s}</li>`).join('');
+
+  const weaknesses = (r.weaknesses||[]).map((w,i) => {
+    if(typeof w==='string') return `<li>${w}</li>`;
+    return `<li><strong>${i+1}. ${w.point||''}</strong>${w.location?` [${w.location}]`:''}: ${w.detail||''}</li>`;
+  }).join('');
+
+  const recs = (r.recommendations||[]).map((rec,i) => {
+    if(typeof rec==='string') return `<li>${rec}</li>`;
+    return `<li><strong>${i+1}. ${rec.point||''}</strong>${rec.target?` [${rec.target}]`:''}: ${rec.detail||''}</li>`;
+  }).join('');
+
+  const html = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>Phiếu Thẩm Định SKKN</title>
+<style>
+  body { font-family: 'Times New Roman', serif; font-size: 13pt; margin: 2cm; }
+  h1 { font-size: 16pt; text-align: center; text-transform: uppercase; }
+  h2 { font-size: 14pt; border-bottom: 1px solid #333; padding-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+  th { background: #1a1a2e; color: white; padding: 8px; text-align: left; }
+  td { padding: 7px 10px; border: 1px solid #ccc; vertical-align: top; }
+  .meta { margin-bottom: 16px; }
+  .meta td { border: none; padding: 3px 10px 3px 0; }
+  .score-big { font-size: 22pt; font-weight: bold; color: #c9a84c; }
+  ul { margin: 6px 0 6px 20px; }
+  li { margin-bottom: 5px; line-height: 1.7; }
+  .conclusion { background: #f5f0e8; padding: 12px 16px; border-left: 4px solid #c9a84c; font-style: italic; line-height: 1.9; }
+  .footer { margin-top: 30px; text-align: right; font-size: 11pt; color: #666; }
+</style>
+</head>
+<body>
+<h1>Phiếu Thẩm Định ${docTypeName||'SKKN'}</h1>
+<table class="meta">
+  <tr><td><strong>Tên tài liệu:</strong></td><td>${r.title||''}</td></tr>
+  <tr><td><strong>Tác giả:</strong></td><td>${r.author||''}</td></tr>
+  <tr><td><strong>Hội đồng:</strong></td><td>${council||''}</td></tr>
+  <tr><td><strong>Cấp đánh giá:</strong></td><td>${levelLabel||''}</td></tr>
+  <tr><td><strong>Ngày thẩm định:</strong></td><td>${now}</td></tr>
+  <tr><td><strong>Tổng điểm:</strong></td><td><span class="score-big">${r.total}/${r.totalMax}</span> (${pct}%) — <strong>${r.verdict}</strong></td></tr>
+</table>
+
+${r.summary?`<h2>📝 Tóm tắt nội dung</h2><p>${r.summary}</p>`:''}
+
+<h2>📊 Điểm từng tiêu chí</h2>
+<table>
+  <thead><tr><th>#</th><th>Tiêu chí</th><th>Điểm</th><th>Nhận xét chi tiết</th></tr></thead>
+  <tbody>${scoresRows}</tbody>
+  <tfoot><tr><td colspan="2"><strong>TỔNG ĐIỂM</strong></td><td><strong>${r.total}/${r.totalMax}</strong></td><td><strong>${r.verdict}</strong></td></tr></tfoot>
+</table>
+
+<h2>✅ Ưu điểm</h2>
+<ul>${strengths}</ul>
+
+<h2>⚠️ Hạn chế</h2>
+<ul>${weaknesses}</ul>
+
+<h2>💡 Đề xuất cải tiến</h2>
+<ul>${recs}</ul>
+
+<h2>📜 Kết luận</h2>
+<div class="conclusion">${r.conclusion||''}</div>
+
+<div class="footer">Phiếu tự động bởi Trợ Lý Thẩm Định SKKN | ${now}</div>
+</body></html>`;
+
+  const blob = new Blob(['\ufeff'+html], {type:'application/msword'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `PhieuThamDinh_${(r.title||'SKKN').replace(/[^a-zA-Z0-9À-ỹ\s]/g,'').substring(0,40).trim()}.doc`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ===== EXPORT PDF =====
+function exportPdf() {
+  if (!lastResult) { alert('Chưa có kết quả để xuất!'); return; }
+
+  // Use print-to-PDF with a dedicated print stylesheet
+  const style = document.createElement('style');
+  style.id = 'pdf-print-style';
+  style.textContent = `
+    @media print {
+      @page { margin: 1.5cm; size: A4; }
+      header, .tabs, #pane-setup, #pane-criteria, #pane-input, .btn-row { display: none !important; }
+      #pane-result { display: block !important; }
+      body { background: white !important; background-image: none !important; }
+      .result-wrap { box-shadow: none !important; border: 1px solid #ccc !important; }
+    }
+  `;
+  document.head.appendChild(style);
+
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => { const el = document.getElementById('pdf-print-style'); if(el) el.remove(); }, 1000);
+  }, 200);
+}
+</script>
+</body>
+</html>
