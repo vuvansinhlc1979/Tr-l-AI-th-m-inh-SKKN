@@ -290,13 +290,17 @@ hr.div { border: none; border-top: 1px solid #ede8dc; margin: 20px 0; }
       <input type="text" id="council" placeholder="VD: Hội đồng thẩm định trường TH số 2 Gia Phú">
       <div class="gap"></div>
       <label>Loại tài liệu cần thẩm định</label>
-      <select id="docType">
+      <select id="docType" onchange="onDocTypeChange()">
         <option value="skkn">Sáng kiến kinh nghiệm (SKKN)</option>
         <option value="giao_an">Giáo án / Kế hoạch bài dạy</option>
         <option value="de_tai">Đề tài nghiên cứu khoa học</option>
         <option value="bao_cao">Báo cáo chuyên đề</option>
-        <option value="khac">Tài liệu khác</option>
+        <option value="sinh_hoat_cm">Biên bản sinh hoạt chuyên môn</option>
+        <option value="khac">Tài liệu khác (tự bổ sung tiêu chí)</option>
       </select>
+      <div id="docTypeHint" style="font-size:12px;color:#5a4a1a;background:#fffdf5;border:1px solid #e8d5a3;border-radius:4px;padding:7px 12px;margin-top:6px">
+        📋 <strong>SKKN:</strong> Tiêu chí theo Thông tư 22/2023/TT-BGDĐT gồm 6 tiêu chí, tổng 100 điểm.
+      </div>
     </div>
     <div class="card" style="background:#fffdf5;border-left:4px solid #c9a84c">
       <div style="font-size:13px;color:#5a4a1a;line-height:2.1">
@@ -314,7 +318,7 @@ hr.div { border: none; border-top: 1px solid #ede8dc; margin: 20px 0; }
   <div id="pane-criteria" class="tab-pane">
     <div class="card">
       <div class="card-title">📋 Tiêu chí chuẩn ngành Giáo dục</div>
-      <p style="font-size:12px;color:#888;margin-bottom:14px">Theo Thông tư 22/2023/TT-BGDĐT. Có thể điều chỉnh điểm tối đa.</p>
+      <p style="font-size:12px;color:#888;margin-bottom:14px"> Có thể điều chỉnh điểm tối đa.</p>
       <table id="defaultTable">
         <thead><tr><th>#</th><th>Tiêu chí</th><th>Điểm tối đa</th><th>Loại</th></tr></thead>
         <tbody id="defaultBody"></tbody>
@@ -393,6 +397,18 @@ hr.div { border: none; border-top: 1px solid #ede8dc; margin: 20px 0; }
           <div class="page-card" data-pages="30" onclick="selectPages('30',this)">
             <div class="pg-range">~30 trang</div>
             <div class="pg-note">3 lần gọi</div>
+          </div>
+          <div class="page-card" data-pages="35" onclick="selectPages('35',this)">
+            <div class="pg-range">~35 trang</div>
+            <div class="pg-note">4 lần gọi</div>
+          </div>
+          <div class="page-card" data-pages="40" onclick="selectPages('40',this)">
+            <div class="pg-range">~40 trang</div>
+            <div class="pg-note">4 lần gọi</div>
+          </div>
+          <div class="page-card" data-pages="50+" onclick="selectPages('50+',this)">
+            <div class="pg-range">50+ trang</div>
+            <div class="pg-note">5 lần gọi</div>
           </div>
         </div>
         <div id="pageDesc" class="page-chunk-info">
@@ -561,15 +577,83 @@ function initLicense() {
 }
 
 // ===== DATA =====
-const CRITERIA = [
-  {id:'c1', name:'Tính mới và sáng tạo', desc:'Giải pháp có điểm mới, khác biệt so với cách làm cũ', max:25, req:true},
-  {id:'c2', name:'Tính khoa học', desc:'Cơ sở lý luận vững chắc, phương pháp nghiên cứu hợp lý', max:20, req:true},
-  {id:'c3', name:'Tính thực tiễn', desc:'Xuất phát từ thực tế, giải quyết vấn đề cụ thể', max:20, req:true},
-  {id:'c4', name:'Hiệu quả áp dụng', desc:'Kết quả đạt được, dữ liệu minh chứng rõ ràng', max:20, req:true},
-  {id:'c5', name:'Khả năng nhân rộng', desc:'Có thể áp dụng ở nhiều đơn vị tương tự', max:10, req:false},
-  {id:'c6', name:'Hình thức trình bày', desc:'Bố cục rõ ràng, văn phong chuẩn, đúng quy định', max:5, req:false},
-];
-const DOC_NAMES = {skkn:'Sáng kiến kinh nghiệm (SKKN)', giao_an:'Giáo án', de_tai:'Đề tài nghiên cứu', bao_cao:'Báo cáo chuyên đề', khac:'Tài liệu'};
+const CRITERIA_MAP = {
+  skkn: [
+    {id:'c1', name:'Tính mới và sáng tạo', desc:'Giải pháp có điểm mới, khác biệt so với cách làm cũ; có tư duy đổi mới trong tiếp cận vấn đề', max:25, req:true},
+    {id:'c2', name:'Tính khoa học', desc:'Cơ sở lý luận vững chắc, phương pháp nghiên cứu hợp lý, trích dẫn đúng chuẩn', max:20, req:true},
+    {id:'c3', name:'Tính thực tiễn', desc:'Xuất phát từ thực tế đơn vị, giải quyết vấn đề cụ thể, có minh chứng rõ ràng', max:20, req:true},
+    {id:'c4', name:'Hiệu quả áp dụng', desc:'Kết quả đạt được sau áp dụng, có số liệu so sánh trước–sau, dữ liệu minh chứng rõ ràng', max:20, req:true},
+    {id:'c5', name:'Khả năng nhân rộng', desc:'Có thể áp dụng ở nhiều đơn vị tương tự trong và ngoài địa phương', max:10, req:false},
+    {id:'c6', name:'Hình thức trình bày', desc:'Bố cục rõ ràng, văn phong chuẩn, đúng quy định về thể thức văn bản', max:5, req:false},
+  ],
+  giao_an: [
+    {id:'g1', name:'Yêu cầu cần đạt (Mục tiêu bài học)', desc:'Xác định đúng yêu cầu cần đạt theo CT GDPT 2018 cấp Tiểu học; thể hiện rõ phẩm chất, năng lực chung và năng lực đặc thù; phù hợp chuẩn kiến thức kỹ năng và đặc điểm học sinh Tiểu học (CV 2345/BGDĐT, tích hợp tinh thần TT27)', max:20, req:true},
+    {id:'g2', name:'Thiết bị dạy học và học liệu', desc:'Thiết bị, học liệu, đồ dùng dạy học phù hợp đặc thù Tiểu học; đa dạng, trực quan, sinh động; phù hợp nội dung bài và khả năng khai thác của học sinh', max:10, req:true},
+    {id:'g3', name:'Tiến trình tổ chức hoạt động dạy học', desc:'Thiết kế đủ các hoạt động theo mô hình CV 2345 (Khởi động, Khám phá/Hình thành kiến thức, Luyện tập, Vận dụng); logic, sáng tạo; phát huy tính tích cực chủ động của học sinh Tiểu học; thời lượng phân bổ hợp lý', max:30, req:true},
+    {id:'g4', name:'Phương pháp và kỹ thuật dạy học tích cực', desc:'Sử dụng phương pháp dạy học tích cực phù hợp đặc điểm tâm sinh lý học sinh Tiểu học (trò chơi, thảo luận nhóm, đóng vai, dự án nhỏ...); thể hiện tinh thần đổi mới theo Thông tư 27', max:20, req:true},
+    {id:'g5', name:'Kiểm tra, đánh giá học sinh', desc:'Có công cụ đánh giá phù hợp đặc thù đánh giá Tiểu học theo TT27 (nhận xét, quan sát, phiếu học tập...); đánh giá quá trình, không chỉ kết quả; đánh giá đúng yêu cầu cần đạt', max:15, req:true},
+    {id:'g6', name:'Hình thức trình bày kế hoạch bài dạy', desc:'Đúng mẫu KHBD theo CV 2345/BGDĐT dành cho cấp Tiểu học; bố cục rõ ràng, ngôn ngữ chuẩn mực, dễ thực hiện; thể hiện được sự chuẩn bị chu đáo của giáo viên', max:5, req:false},
+  ],
+  de_tai: [
+    {id:'d1', name:'Tính cấp thiết của vấn đề nghiên cứu', desc:'Vấn đề nghiên cứu có ý nghĩa thực tiễn, xuất phát từ nhu cầu thực tế giáo dục, được lý giải thuyết phục', max:15, req:true},
+    {id:'d2', name:'Tổng quan và cơ sở lý luận', desc:'Tổng quan tài liệu đầy đủ, hệ thống lý luận vững chắc, trích dẫn đúng chuẩn khoa học', max:20, req:true},
+    {id:'d3', name:'Phương pháp nghiên cứu', desc:'Phương pháp nghiên cứu phù hợp mục tiêu, thiết kế nghiên cứu rõ ràng, mẫu nghiên cứu đủ đại diện', max:20, req:true},
+    {id:'d4', name:'Kết quả và phân tích', desc:'Kết quả trình bày rõ ràng, phân tích sâu, có bảng số liệu/biểu đồ minh họa, kết luận logic và có căn cứ', max:25, req:true},
+    {id:'d5', name:'Tính mới và đóng góp khoa học', desc:'Có điểm mới so với các nghiên cứu trước, đóng góp giá trị cho lý luận hoặc thực tiễn giáo dục', max:10, req:true},
+    {id:'d6', name:'Hình thức và tài liệu tham khảo', desc:'Trình bày đúng chuẩn đề tài nghiên cứu khoa học, danh mục TLTK đầy đủ, đúng quy cách', max:10, req:false},
+  ],
+  bao_cao: [
+    {id:'b1', name:'Xác định mục đích và yêu cầu', desc:'Mục đích báo cáo rõ ràng, bám sát chủ đề chuyên đề, đáp ứng yêu cầu của cấp trên hoặc kế hoạch đề ra', max:15, req:true},
+    {id:'b2', name:'Nội dung chuyên đề', desc:'Nội dung phong phú, có chiều sâu chuyên môn, bám sát thực tiễn dạy học, có dẫn chứng cụ thể', max:30, req:true},
+    {id:'b3', name:'Giải pháp và minh chứng', desc:'Có giải pháp cụ thể, rõ ràng; minh chứng thuyết phục (hình ảnh, số liệu, sản phẩm học sinh…)', max:25, req:true},
+    {id:'b4', name:'Tính ứng dụng và lan tỏa', desc:'Giải pháp có thể áp dụng tại đơn vị và chia sẻ với đồng nghiệp; có định hướng triển khai tiếp theo', max:20, req:true},
+    {id:'b5', name:'Hình thức trình bày', desc:'Bố cục khoa học, ngôn ngữ chuẩn mực, đúng thể thức văn bản hành chính nhà nước', max:10, req:false},
+  ],
+  sinh_hoat_cm: [
+    {id:'sh1', name:'Chuẩn bị sinh hoạt chuyên môn', desc:'Có kế hoạch, nội dung sinh hoạt được chuẩn bị đầy đủ, phân công rõ ràng trước buổi họp (theo CV 1315/BGDĐT)', max:15, req:true},
+    {id:'sh2', name:'Nội dung sinh hoạt chuyên môn', desc:'Nội dung bám sát chủ đề, có phân tích bài dạy/hoạt động giáo dục cụ thể, thảo luận thực chất, chuyên sâu', max:30, req:true},
+    {id:'sh3', name:'Chất lượng thảo luận', desc:'Có nhiều ý kiến đóng góp thiết thực, mang tính xây dựng; ghi nhận được điểm mạnh và hạn chế rõ ràng', max:25, req:true},
+    {id:'sh4', name:'Kết luận và kế hoạch tiếp theo', desc:'Kết luận rõ ràng, phân công nhiệm vụ cụ thể, có định hướng cải tiến cho buổi sinh hoạt/tiết dạy tiếp theo', max:20, req:true},
+    {id:'sh5', name:'Hình thức biên bản', desc:'Biên bản đúng mẫu quy định, đủ thành phần tham dự, ký xác nhận đầy đủ', max:10, req:false},
+  ],
+  khac: [],
+};
+
+// Lấy tiêu chí hiện tại theo loại tài liệu đang chọn
+function getCurrentCriteria() {
+  const docType = document.getElementById('docType')?.value || 'skkn';
+  return CRITERIA_MAP[docType] || [];
+}
+
+// Giữ biến CRITERIA để tương thích với các hàm cũ (renderCriteria, updateTotal...)
+let CRITERIA = CRITERIA_MAP['skkn'];
+const DOC_NAMES = {
+  skkn:'Sáng kiến kinh nghiệm (SKKN)',
+  giao_an:'Giáo án / Kế hoạch bài dạy',
+  de_tai:'Đề tài nghiên cứu khoa học',
+  bao_cao:'Báo cáo chuyên đề',
+  sinh_hoat_cm:'Biên bản sinh hoạt chuyên môn',
+  khac:'Tài liệu'
+};
+
+const DOC_TYPE_HINTS = {
+  skkn: '📋 <strong>SKKN:</strong> Tiêu chí theo <strong>Thông tư 29/2023/TT-BGDĐT</strong> (thi đua ngành GD) gồm 5 tiêu chí cốt lõi, tổng 100 điểm. Hướng dẫn chi tiết của Sở/Phòng GD&ĐT bổ sung qua ô "Yêu cầu thêm cho AI".',
+  giao_an: '📋 <strong>Giáo án/KHBD Tiểu học:</strong> Tiêu chí theo <strong>Công văn 2345/BGDĐT</strong> tích hợp tinh thần <strong>Thông tư 27</strong>, gồm 6 tiêu chí, tổng 100 điểm.',
+  de_tai: '📋 <strong>Đề tài NCKH:</strong> Tiêu chí theo chuẩn nghiên cứu khoa học giáo dục gồm 6 tiêu chí, tổng 100 điểm.',
+  bao_cao: '📋 <strong>Báo cáo chuyên đề:</strong> Tiêu chí đánh giá chuyên đề giáo dục gồm 5 tiêu chí, tổng 100 điểm.',
+  sinh_hoat_cm: '📋 <strong>Biên bản SHCM:</strong> Tiêu chí theo Công văn 1315/BGDĐT-GDTrH về SHCM gồm 5 tiêu chí, tổng 100 điểm.',
+  khac: '✏️ <strong>Tài liệu khác:</strong> Không có tiêu chí mặc định — vui lòng tự bổ sung tiêu chí ở bảng bên dưới.',
+};
+
+function onDocTypeChange() {
+  const docType = document.getElementById('docType').value;
+  // Cập nhật hint
+  const hintEl = document.getElementById('docTypeHint');
+  if (hintEl) hintEl.innerHTML = DOC_TYPE_HINTS[docType] || '';
+  // Cập nhật CRITERIA và render lại bảng
+  CRITERIA = CRITERIA_MAP[docType] || [];
+  renderCriteria();
+}
 const VERDICT_STYLE = {
   'Xuất sắc': {bg:'#d5f5e3', color:'#1e8449', border:'#27ae60'},
   'Tốt':      {bg:'#d6eaf8', color:'#1a5276', border:'#2980b9'},
@@ -591,6 +675,9 @@ const PAGE_CONFIG = {
   '20':   { label: '~20 trang',  chars: 32000, chunks: 2, hint: '📋 <strong>~20 trang:</strong> Tài liệu dài — AI đọc 2 lần, tổng hợp chi tiết từng phần.' },
   '25':   { label: '~25 trang',  chars: 40000, chunks: 3, hint: '📋 <strong>~25 trang:</strong> Tài liệu rất dài — AI đọc 3 lần (chia 3 phần), sau đó tổng hợp toàn diện.' },
   '30':   { label: '~30 trang',  chars: 48000, chunks: 3, hint: '📋 <strong>~30 trang:</strong> Tài liệu rất dài — AI đọc 3 lần, đánh giá toàn diện nhất.' },
+  '35':   { label: '~35 trang',  chars: 58000, chunks: 4, hint: '📋 <strong>~35 trang:</strong> Tài liệu rất dài — AI đọc 4 lần (chia 4 phần), tổng hợp toàn diện. Mất khoảng 2–3 phút.' },
+  '40':   { label: '~40 trang',  chars: 68000, chunks: 4, hint: '📋 <strong>~40 trang:</strong> Tài liệu cực dài — AI đọc 4 lần, phân tích sâu từng phần. Mất khoảng 3–4 phút.' },
+  '50+':  { label: '50+ trang',  chars: 90000, chunks: 5, hint: '📋 <strong>50+ trang:</strong> Tài liệu rất lớn — AI đọc 5 lần, tổng hợp toàn bộ. Mất khoảng 4–6 phút, vui lòng kiên nhẫn chờ.' },
 };
 
 // Cấu hình theo cấp đánh giá
@@ -675,7 +762,18 @@ window.onload = () => {
 
 function renderCriteria() {
   const tbody = document.getElementById('defaultBody');
+  const docType = document.getElementById('docType')?.value || 'skkn';
   tbody.innerHTML = '';
+
+  if (docType === 'khac' || CRITERIA.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px;font-style:italic">
+      ✏️ Loại tài liệu này không có tiêu chí mặc định.<br>
+      Vui lòng tự bổ sung tiêu chí ở mục <strong>"Tiêu chí tùy chỉnh thêm"</strong> bên dưới.
+    </td></tr>`;
+    updateTotal();
+    return;
+  }
+
   CRITERIA.forEach((c,i) => {
     tbody.innerHTML += `<tr>
       <td style="font-family:monospace;color:#bbb;font-weight:700">${i+1}</td>
@@ -772,7 +870,7 @@ async function handlePdf(e) {
         pagesRead++;
       }
       // Stop if we have enough text (prevent API overload beyond selected page range)
-      if (fullText.length > pgCfg.chars * 1.2) {
+      if (fullText.length > pgCfg.chars * 1.5) {
         document.getElementById('loadingMsg').textContent = `📄 Đã đọc đủ nội dung (${pagesRead}/${totalPages} trang có văn bản)...`;
         break;
       }
@@ -883,7 +981,7 @@ async function startAssess() {
     docContent = pdfTextContent;
   }
   showError('inputError','');
-
+  
   const allC = [...CRITERIA.map(c=>({...c, max:+(document.getElementById('max_'+c.id)?.value||c.max)})),
                 ...customCriteria.filter(c=>c.name.trim())];
   const totalMax = allC.reduce((s,c)=>s+c.max,0);
