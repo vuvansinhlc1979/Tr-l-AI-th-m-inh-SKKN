@@ -218,7 +218,18 @@ hr.div { border: none; border-top: 1px solid #ede8dc; margin: 20px 0; }
 .level-card[data-lv="tinh"].selected { border-color: #c0392b; background: #fdecea; }
 
 @media (max-width: 600px) { .level-group { grid-template-columns: 1fr; } }
-
+/* HISTORY */
+.hist-item { background:#fff; border:1px solid #e8e0d0; border-radius:5px; padding:13px 16px; margin-bottom:10px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:box-shadow .2s; }
+.hist-item:hover { box-shadow:0 2px 10px rgba(26,26,46,0.1); }
+.hist-score { width:52px; height:52px; border-radius:50%; background:#1a1a2e; border:2px solid #c9a84c; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
+.hist-score .hn { font-family:'Playfair Display',serif; font-size:15px; color:#c9a84c; line-height:1; }
+.hist-score .hd { font-size:9px; color:#e8d5a3; font-family:monospace; }
+.hist-meta { flex:1; min-width:0; }
+.hist-meta .ht { font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hist-meta .hm { font-size:11px; color:#aaa; margin-top:3px; font-family:monospace; }
+.hist-del { background:none; border:none; cursor:pointer; color:#ddd; font-size:20px; padding:0 4px; flex-shrink:0; }
+.hist-del:hover { color:#c0392b; }
+.hist-empty { text-align:center; padding:50px 0; color:#ccc; font-size:14px; }
 @media print {
   header, .tabs, #pane-setup, #pane-criteria, #pane-input, .btn-row { display: none !important; }
   #pane-result { display: block !important; }
@@ -267,6 +278,7 @@ hr.div { border: none; border-top: 1px solid #ede8dc; margin: 20px 0; }
     <button class="tab" onclick="goTab('criteria',this)">📋 Tiêu chí</button>
     <button class="tab" onclick="goTab('input',this)">📄 Tài liệu</button>
     <button class="tab" onclick="goTab('result',this)">📊 Kết quả</button>
+    <button class="tab" onclick="goTab('history',this)">🗂️ Lịch sử</button>
   </div>
 
   <!-- SETUP -->
@@ -288,6 +300,12 @@ hr.div { border: none; border-top: 1px solid #ede8dc; margin: 20px 0; }
       <div class="card-title">🎯 Thông tin thẩm định</div>
       <label>Hội đồng / Ban thẩm định <span style="color:#aaa;font-weight:400">(tùy chọn)</span></label>
       <input type="text" id="council" placeholder="VD: Hội đồng thẩm định trường TH số 2 Gia Phú">
+      <div class="gap"></div>
+      <label>Tên đơn vị (in trên phiếu Word) <span style="color:#aaa;font-weight:400">(tùy chọn)</span></label>
+      <input type="text" id="unitName" placeholder="VD: Trường TH số 2 Gia Phú, huyện Bảo Thắng, tỉnh Lào Cai">
+      <div class="gap"></div>
+      <label>Đơn vị cấp trên <span style="color:#aaa;font-weight:400">(tùy chọn)</span></label>
+      <input type="text" id="deptName" placeholder="VD: Phòng GD&ĐT huyện Bảo Thắng">
       <div class="gap"></div>
       <label>Loại tài liệu cần thẩm định</label>
       <select id="docType" onchange="onDocTypeChange()">
@@ -318,7 +336,7 @@ hr.div { border: none; border-top: 1px solid #ede8dc; margin: 20px 0; }
   <div id="pane-criteria" class="tab-pane">
     <div class="card">
       <div class="card-title">📋 Tiêu chí chuẩn ngành Giáo dục</div>
-      <p style="font-size:12px;color:#888;margin-bottom:8px">Có thể điều chỉnh điểm tối đa, thêm/xóa/sửa tiêu chí.</p>
+      <p style="font-size:12px;color:#888;margin-bottom:8px">Tiêu chí SKKN theo Thông tư 18/2024/TT-BGDĐT; Giáo án theo CV 2345/BGDĐT-GDTrH & CV 2613/BGDĐT-GDTH; SHCM theo CV 1315 & CV 4614/BGDĐT-GDTrH. Có thể điều chỉnh điểm tối đa, thêm/xóa/sửa tiêu chí.</p>
       <div id="resetCriteriaArea"></div>
       <table id="defaultTable">
         <thead><tr><th>#</th><th>Tiêu chí</th><th>Điểm tối đa</th><th>Loại</th></tr></thead>
@@ -488,7 +506,17 @@ hr.div { border: none; border-top: 1px solid #ede8dc; margin: 20px 0; }
     </div>
   </div>
 </div>
-
+<!-- HISTORY -->
+  <div id="pane-history" class="tab-pane">
+    <div class="card">
+      <div class="card-title">🗂️ Lịch sử thẩm định</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span style="font-size:12px;color:#aaa">Lưu tối đa 50 phiếu gần nhất trên máy này.</span>
+        <button class="btn btn-outline" style="font-size:12px;padding:5px 14px;color:#c0392b;border-color:#c0392b" onclick="clearHistory()">🗑️ Xóa toàn bộ</button>
+      </div>
+      <div id="historyList"></div>
+    </div>
+  </div>
 </div><!-- end mainApp -->
 
 <script>
@@ -580,42 +608,42 @@ function initLicense() {
 // ===== DATA =====
 const CRITERIA_MAP = {
   skkn: [
-    {id:'c1', name:'Tính mới và sáng tạo', desc:'Giải pháp có điểm mới, khác biệt so với cách làm cũ; có tư duy đổi mới trong tiếp cận vấn đề', max:25, req:true},
-    {id:'c2', name:'Tính khoa học', desc:'Cơ sở lý luận vững chắc, phương pháp nghiên cứu hợp lý, trích dẫn đúng chuẩn', max:20, req:true},
-    {id:'c3', name:'Tính thực tiễn', desc:'Xuất phát từ thực tế đơn vị, giải quyết vấn đề cụ thể, có minh chứng rõ ràng', max:20, req:true},
-    {id:'c4', name:'Hiệu quả áp dụng', desc:'Kết quả đạt được sau áp dụng, có số liệu so sánh trước–sau, dữ liệu minh chứng rõ ràng', max:20, req:true},
-    {id:'c5', name:'Khả năng nhân rộng', desc:'Có thể áp dụng ở nhiều đơn vị tương tự trong và ngoài địa phương', max:10, req:false},
-    {id:'c6', name:'Hình thức trình bày', desc:'Bố cục rõ ràng, văn phong chuẩn, đúng quy định về thể thức văn bản', max:5, req:false},
+    {id:'c1', name:'Tính mới và sáng tạo', desc:'Giải pháp có điểm mới rõ rệt so với cách làm cũ; thể hiện tư duy đổi mới sáng tạo trong tiếp cận và giải quyết vấn đề (Theo TT 18/2024/TT-BGDĐT)', max:30, req:true},
+    {id:'c2', name:'Tính khoa học', desc:'Cơ sở lý luận vững chắc, phương pháp nghiên cứu phù hợp, lập luận logic, trích dẫn đúng chuẩn', max:20, req:true},
+    {id:'c3', name:'Tính thực tiễn', desc:'Xuất phát từ thực tế đơn vị, giải quyết vấn đề cụ thể, có minh chứng thực tiễn rõ ràng', max:20, req:true},
+    {id:'c4', name:'Hiệu quả áp dụng', desc:'Kết quả đạt được sau áp dụng, có số liệu so sánh trước–sau, dữ liệu minh chứng đáng tin cậy', max:15, req:true},
+    {id:'c5', name:'Khả năng nhân rộng', desc:'Có thể áp dụng ở nhiều đơn vị tương tự trong và ngoài địa phương; có hướng dẫn triển khai rõ ràng', max:10, req:false},
+    {id:'c6', name:'Hình thức trình bày', desc:'Bố cục rõ ràng, văn phong chuẩn mực, đúng thể thức văn bản; không vi phạm bản quyền, đạo văn', max:5, req:false},
   ],
   giao_an: [
     {id:'g1', name:'Yêu cầu cần đạt (Mục tiêu bài học)', desc:'Xác định đúng yêu cầu cần đạt theo CT GDPT 2018 cấp Tiểu học; thể hiện rõ phẩm chất, năng lực chung và năng lực đặc thù; phù hợp chuẩn kiến thức kỹ năng và đặc điểm học sinh Tiểu học (CV 2345/BGDĐT, tích hợp tinh thần TT27)', max:20, req:true},
     {id:'g2', name:'Thiết bị dạy học và học liệu', desc:'Thiết bị, học liệu, đồ dùng dạy học phù hợp đặc thù Tiểu học; đa dạng, trực quan, sinh động; phù hợp nội dung bài và khả năng khai thác của học sinh', max:10, req:true},
-    {id:'g3', name:'Tiến trình tổ chức hoạt động dạy học', desc:'Thiết kế đủ các hoạt động theo mô hình CV 2345 (Khởi động, Khám phá/Hình thành kiến thức, Luyện tập, Vận dụng); logic, sáng tạo; phát huy tính tích cực chủ động của học sinh Tiểu học; thời lượng phân bổ hợp lý', max:30, req:true},
-    {id:'g4', name:'Phương pháp và kỹ thuật dạy học tích cực', desc:'Sử dụng phương pháp dạy học tích cực phù hợp đặc điểm tâm sinh lý học sinh Tiểu học (trò chơi, thảo luận nhóm, đóng vai, dự án nhỏ...); thể hiện tinh thần đổi mới theo Thông tư 27', max:20, req:true},
-    {id:'g5', name:'Kiểm tra, đánh giá học sinh', desc:'Có công cụ đánh giá phù hợp đặc thù đánh giá Tiểu học theo TT27 (nhận xét, quan sát, phiếu học tập...); đánh giá quá trình, không chỉ kết quả; đánh giá đúng yêu cầu cần đạt', max:15, req:true},
+    {id:'g3', name:'Tiến trình tổ chức hoạt động dạy học', desc:'Thiết kế đủ các hoạt động theo mô hình CV 2345 (Khởi động, Khám phá/Hình thành kiến thức, Luyện tập, Vận dụng); logic, sáng tạo; phát huy tính cực chủ động của học sinh Tiểu học; thời lượng phân bổ hợp lý', max:30, req:true},
+    {id:'g4', name:'Phương pháp và kỹ thuật dạy học tích cực', desc:'Sử dụng phương pháp dạy học tích cực phù hợp đặc điểm tâm lý học sinh Tiểu học (trò chơi, thảo luận nhóm, đóng vai, dự án nhỏ...); thể hiện tinh thần đổi mới theo Thông tư 27', max:20, req:true},
+    {id:'g5', name:'Kiểm tra, đánh giá học sinh', desc:'Có công cụ đánh giá phù hợp đặc thù Tiểu học theo TT27 (nhận xét, quan sát, phiếu học tập...); đánh giá quá trình, không chỉ kết quả; đánh giá đúng yêu cầu cần đạt', max:15, req:true},
     {id:'g6', name:'Hình thức trình bày kế hoạch bài dạy', desc:'Đúng mẫu KHBD theo CV 2345/BGDĐT dành cho cấp Tiểu học; bố cục rõ ràng, ngôn ngữ chuẩn mực, dễ thực hiện; thể hiện được sự chuẩn bị chu đáo của giáo viên', max:5, req:false},
   ],
   de_tai: [
-    {id:'d1', name:'Tính cấp thiết của vấn đề nghiên cứu', desc:'Vấn đề nghiên cứu có ý nghĩa thực tiễn, xuất phát từ nhu cầu thực tế giáo dục, được lý giải thuyết phục', max:15, req:true},
-    {id:'d2', name:'Tổng quan và cơ sở lý luận', desc:'Tổng quan tài liệu đầy đủ, hệ thống lý luận vững chắc, trích dẫn đúng chuẩn khoa học', max:20, req:true},
-    {id:'d3', name:'Phương pháp nghiên cứu', desc:'Phương pháp nghiên cứu phù hợp mục tiêu, thiết kế nghiên cứu rõ ràng, mẫu nghiên cứu đủ đại diện', max:20, req:true},
-    {id:'d4', name:'Kết quả và phân tích', desc:'Kết quả trình bày rõ ràng, phân tích sâu, có bảng số liệu/biểu đồ minh họa, kết luận logic và có căn cứ', max:25, req:true},
-    {id:'d5', name:'Tính mới và đóng góp khoa học', desc:'Có điểm mới so với các nghiên cứu trước, đóng góp giá trị cho lý luận hoặc thực tiễn giáo dục', max:10, req:true},
-    {id:'d6', name:'Hình thức và tài liệu tham khảo', desc:'Trình bày đúng chuẩn đề tài nghiên cứu khoa học, danh mục TLTK đầy đủ, đúng quy cách', max:10, req:false},
+    {id:'d1', name:'Tính cấp thiết của vấn đề', desc:'Vấn đề nghiên cứu có ý nghĩa thực tiễn rõ ràng; xuất phát từ nhu cầu thực tế giáo dục; được lý giải thuyết phục (Theo TT 37/2014/TT-BGDĐT)', max:15, req:true},
+    {id:'d2', name:'Tổng quan & cơ sở lý luận', desc:'Tổng quan tài liệu đầy đủ, hệ thống lý luận vững chắc, trích dẫn đúng chuẩn khoa học; thể hiện am hiểu lĩnh vực nghiên cứu', max:20, req:true},
+    {id:'d3', name:'Phương pháp nghiên cứu', desc:'Phương pháp nghiên cứu phù hợp mục tiêu; thiết kế nghiên cứu rõ ràng; mẫu nghiên cứu đủ đại diện và được mô tả rõ', max:20, req:true},
+    {id:'d4', name:'Kết quả & phân tích', desc:'Kết quả trình bày rõ ràng, phân tích sâu; có bảng số liệu/biểu đồ minh họa; kết luận logic, trả lời đúng câu hỏi nghiên cứu', max:25, req:true},
+    {id:'d5', name:'Tính mới & đóng góp khoa học', desc:'Có điểm mới so với nghiên cứu trước; đóng góp giá trị cho lý luận hoặc thực tiễn giáo dục; có khả năng ứng dụng rõ ràng', max:15, req:true},
+    {id:'d6', name:'Hình thức & tài liệu tham khảo', desc:'Trình bày đúng chuẩn đề tài nghiên cứu khoa học; danh mục TLTK đầy đủ, đúng quy cách; không vi phạm đạo văn', max:5, req:false},
   ],
   bao_cao: [
-    {id:'b1', name:'Xác định mục đích và yêu cầu', desc:'Mục đích báo cáo rõ ràng, bám sát chủ đề chuyên đề, đáp ứng yêu cầu của cấp trên hoặc kế hoạch đề ra', max:15, req:true},
-    {id:'b2', name:'Nội dung chuyên đề', desc:'Nội dung phong phú, có chiều sâu chuyên môn, bám sát thực tiễn dạy học, có dẫn chứng cụ thể', max:30, req:true},
-    {id:'b3', name:'Giải pháp và minh chứng', desc:'Có giải pháp cụ thể, rõ ràng; minh chứng thuyết phục (hình ảnh, số liệu, sản phẩm học sinh…)', max:25, req:true},
-    {id:'b4', name:'Tính ứng dụng và lan tỏa', desc:'Giải pháp có thể áp dụng tại đơn vị và chia sẻ với đồng nghiệp; có định hướng triển khai tiếp theo', max:20, req:true},
-    {id:'b5', name:'Hình thức trình bày', desc:'Bố cục khoa học, ngôn ngữ chuẩn mực, đúng thể thức văn bản hành chính nhà nước', max:10, req:false},
+    {id:'b1', name:'Xác định mục đích & yêu cầu', desc:'Mục đích báo cáo rõ ràng, bám sát chủ đề chuyên đề; đáp ứng yêu cầu của cấp trên hoặc kế hoạch năm học', max:15, req:true},
+    {id:'b2', name:'Nội dung chuyên đề', desc:'Nội dung phong phú, có chiều sâu chuyên môn; bám sát thực tiễn dạy học; có dẫn chứng cụ thể, thuyết phục', max:30, req:true},
+    {id:'b3', name:'Giải pháp & minh chứng', desc:'Có giải pháp cụ thể, khả thi; minh chứng thuyết phục (hình ảnh, số liệu, sản phẩm học sinh, biên bản...)', max:25, req:true},
+    {id:'b4', name:'Tính ứng dụng & lan tỏa', desc:'Giải pháp có thể áp dụng tại đơn vị và chia sẻ với đồng nghiệp; có định hướng triển khai tiếp theo rõ ràng', max:20, req:true},
+    {id:'b5', name:'Hình thức trình bày', desc:'Bố cục khoa học, ngôn ngữ chuẩn mực; đúng thể thức văn bản hành chính nhà nước', max:10, req:false},
   ],
   sinh_hoat_cm: [
-    {id:'sh1', name:'Chuẩn bị sinh hoạt chuyên môn', desc:'Có kế hoạch, nội dung sinh hoạt được chuẩn bị đầy đủ, phân công rõ ràng trước buổi họp (theo CV 1315/BGDĐT)', max:15, req:true},
-    {id:'sh2', name:'Nội dung sinh hoạt chuyên môn', desc:'Nội dung bám sát chủ đề, có phân tích bài dạy/hoạt động giáo dục cụ thể, thảo luận thực chất, chuyên sâu', max:30, req:true},
-    {id:'sh3', name:'Chất lượng thảo luận', desc:'Có nhiều ý kiến đóng góp thiết thực, mang tính xây dựng; ghi nhận được điểm mạnh và hạn chế rõ ràng', max:25, req:true},
-    {id:'sh4', name:'Kết luận và kế hoạch tiếp theo', desc:'Kết luận rõ ràng, phân công nhiệm vụ cụ thể, có định hướng cải tiến cho buổi sinh hoạt/tiết dạy tiếp theo', max:20, req:true},
-    {id:'sh5', name:'Hình thức biên bản', desc:'Biên bản đúng mẫu quy định, đủ thành phần tham dự, ký xác nhận đầy đủ', max:10, req:false},
+    {id:'sh1', name:'Chuẩn bị sinh hoạt', desc:'Có kế hoạch, nội dung sinh hoạt được chuẩn bị đầy đủ; phân công rõ ràng trước buổi họp (Theo CV 1315/BGDĐT-GDTrH & CV 4614/BGDĐT-GDTrH năm 2023)', max:15, req:true},
+    {id:'sh2', name:'Nội dung sinh hoạt chuyên môn', desc:'Nội dung bám sát chủ đề; có phân tích bài dạy/hoạt động giáo dục cụ thể theo hướng nghiên cứu bài học; thảo luận thực chất, không hình thức', max:30, req:true},
+    {id:'sh3', name:'Chất lượng thảo luận', desc:'Có nhiều ý kiến đóng góp thiết thực, mang tính xây dựng; ghi nhận được điểm mạnh và hạn chế rõ ràng; tập trung vào việc học của học sinh', max:25, req:true},
+    {id:'sh4', name:'Kết luận & kế hoạch tiếp theo', desc:'Kết luận rõ ràng; phân công nhiệm vụ cụ thể; có định hướng cải tiến cho buổi sinh hoạt/tiết dạy tiếp theo', max:20, req:true},
+    {id:'sh5', name:'Hình thức biên bản', desc:'Biên bản đúng mẫu quy định; đủ thành phần tham dự; ký xác nhận đầy đủ; lưu trữ đúng quy định', max:10, req:false},
   ],
   khac: [],
 };
@@ -814,48 +842,7 @@ function updateTotal() {
   document.getElementById('totalDisplay').textContent = t;
 }
 // Backup gốc bất biến — không bao giờ bị thay đổi
-const CRITERIA_DEFAULT = JSON.parse(JSON.stringify({
-  skkn: [
-    {id:'c1', name:'Tính mới và sáng tạo', desc:'Giải pháp có điểm mới, khác biệt so với cách làm cũ; có tư duy đổi mới trong tiếp cận vấn đề', max:25, req:true},
-    {id:'c2', name:'Tính khoa học', desc:'Cơ sở lý luận vững chắc, phương pháp nghiên cứu hợp lý, trích dẫn đúng chuẩn', max:20, req:true},
-    {id:'c3', name:'Tính thực tiễn', desc:'Xuất phát từ thực tế đơn vị, giải quyết vấn đề cụ thể, có minh chứng rõ ràng', max:20, req:true},
-    {id:'c4', name:'Hiệu quả áp dụng', desc:'Kết quả đạt được sau áp dụng, có số liệu so sánh trước–sau, dữ liệu minh chứng rõ ràng', max:20, req:true},
-    {id:'c5', name:'Khả năng nhân rộng', desc:'Có thể áp dụng ở nhiều đơn vị tương tự trong và ngoài địa phương', max:10, req:false},
-    {id:'c6', name:'Hình thức trình bày', desc:'Bố cục rõ ràng, văn phong chuẩn, đúng quy định về thể thức văn bản', max:5, req:false},
-  ],
-  giao_an: [
-    {id:'g1', name:'Xác định mục tiêu bài học', desc:'Mục tiêu rõ ràng theo 3 thành phần: phẩm chất, năng lực chung, năng lực đặc thù; phù hợp chuẩn CT 2018', max:20, req:true},
-    {id:'g2', name:'Thiết kế hoạt động học', desc:'Các hoạt động (Mở đầu, Hình thành kiến thức, Luyện tập, Vận dụng) được thiết kế logic, sáng tạo, phát huy tích cực học sinh', max:25, req:true},
-    {id:'g3', name:'Phương pháp & kỹ thuật dạy học', desc:'Sử dụng phương pháp dạy học tích cực phù hợp nội dung; có kỹ thuật dạy học hiện đại (thảo luận, dự án, STEM…)', max:20, req:true},
-    {id:'g4', name:'Thiết bị & học liệu', desc:'Thiết bị dạy học, học liệu, phương tiện hỗ trợ phù hợp, khả thi, đa dạng', max:10, req:true},
-    {id:'g5', name:'Kiểm tra đánh giá', desc:'Có công cụ đánh giá học sinh trong tiết học (phiếu học tập, rubric, câu hỏi…), đánh giá đúng mục tiêu', max:15, req:true},
-    {id:'g6', name:'Tính khả thi & phù hợp đối tượng', desc:'Nội dung và thời lượng phù hợp trình độ học sinh, điều kiện thực tế nhà trường', max:5, req:false},
-    {id:'g7', name:'Hình thức trình bày', desc:'Đúng mẫu kế hoạch bài dạy hiện hành, bố cục rõ ràng, ngôn ngữ chuẩn xác', max:5, req:false},
-  ],
-  de_tai: [
-    {id:'d1', name:'Tính cấp thiết của vấn đề', desc:'Vấn đề nghiên cứu có ý nghĩa thực tiễn, xuất phát từ nhu cầu thực tế giáo dục, được lý giải rõ ràng', max:15, req:true},
-    {id:'d2', name:'Tổng quan & cơ sở lý luận', desc:'Tổng quan tài liệu đầy đủ, hệ thống lý luận vững chắc, trích dẫn đúng chuẩn APA/khoa học', max:20, req:true},
-    {id:'d3', name:'Phương pháp nghiên cứu', desc:'Phương pháp nghiên cứu phù hợp, thiết kế nghiên cứu rõ ràng, mẫu nghiên cứu đủ đại diện', max:20, req:true},
-    {id:'d4', name:'Kết quả & phân tích', desc:'Kết quả trình bày rõ ràng, phân tích sâu, có bảng số liệu/biểu đồ minh họa, kết luận logic', max:25, req:true},
-    {id:'d5', name:'Tính mới & đóng góp khoa học', desc:'Có điểm mới so với các nghiên cứu trước, đóng góp giá trị cho lý luận hoặc thực tiễn giáo dục', max:10, req:true},
-    {id:'d6', name:'Hình thức & tài liệu tham khảo', desc:'Trình bày đúng chuẩn đề tài nghiên cứu, danh mục TLTK đầy đủ, đúng quy cách', max:10, req:false},
-  ],
-  bao_cao: [
-    {id:'b1', name:'Xác định mục đích & yêu cầu', desc:'Mục đích báo cáo rõ ràng, bám sát chủ đề chuyên đề, đáp ứng yêu cầu của cấp trên hoặc kế hoạch', max:15, req:true},
-    {id:'b2', name:'Nội dung chuyên đề', desc:'Nội dung phong phú, có chiều sâu chuyên môn, bám sát thực tiễn dạy học, có dẫn chứng cụ thể', max:30, req:true},
-    {id:'b3', name:'Giải pháp & minh chứng', desc:'Có giải pháp cụ thể, rõ ràng; minh chứng thuyết phục (hình ảnh, số liệu, sản phẩm học sinh…)', max:25, req:true},
-    {id:'b4', name:'Tính ứng dụng & lan tỏa', desc:'Giải pháp có thể áp dụng tại đơn vị và chia sẻ với đồng nghiệp; có định hướng triển khai tiếp theo', max:20, req:true},
-    {id:'b5', name:'Hình thức trình bày', desc:'Bố cục khoa học, ngôn ngữ chuẩn mực, đúng thể thức văn bản hành chính', max:10, req:false},
-  ],
-  sinh_hoat_cm: [
-    {id:'sh1', name:'Chuẩn bị sinh hoạt', desc:'Có kế hoạch, nội dung sinh hoạt được chuẩn bị đầy đủ, phân công rõ ràng trước buổi họp', max:15, req:true},
-    {id:'sh2', name:'Nội dung sinh hoạt chuyên môn', desc:'Nội dung bám sát chủ đề, có phân tích bài dạy/hoạt động giáo dục cụ thể, thảo luận thực chất', max:30, req:true},
-    {id:'sh3', name:'Chất lượng thảo luận', desc:'Có nhiều ý kiến đóng góp thiết thực, mang tính xây dựng; ghi nhận được điểm mạnh và hạn chế rõ ràng', max:25, req:true},
-    {id:'sh4', name:'Kết luận & kế hoạch tiếp theo', desc:'Kết luận rõ ràng, phân công nhiệm vụ cụ thể, có định hướng cải tiến cho buổi sinh hoạt/tiết dạy tiếp theo', max:20, req:true},
-    {id:'sh5', name:'Hình thức biên bản', desc:'Biên bản đúng mẫu quy định, đủ thành phần tham dự, ký xác nhận đầy đủ', max:10, req:false},
-  ],
-  khac: [],
-}));
+const CRITERIA_DEFAULT = JSON.parse(JSON.stringify(CRITERIA_MAP));
 
 function resetCriteria() {
   const docType = document.getElementById('docType')?.value || 'skkn';
@@ -900,7 +887,8 @@ function goTab(id, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('pane-'+id).classList.add('active');
   if (el) el.classList.add('active');
-  else document.querySelectorAll('.tab').forEach((t,i) => { if(['setup','criteria','input','result'][i]===id) t.classList.add('active'); });
+  else document.querySelectorAll('.tab').forEach((t,i) => { if(['setup','criteria','input','result','history'][i]===id) t.classList.add('active'); });
+  if (id === 'history') renderHistory();
 }
 
 // ===== INPUT MODE =====
@@ -1124,6 +1112,7 @@ async function startAssess() {
     lastResult = result;
     lastMeta = { council, docTypeName, levelLabel: lv.label };
     renderResult(result, council, docTypeName, lv.label);
+    saveHistory(result, { council, docTypeName, levelLabel: lv.label });
     goTab('result',null);
   } catch(e){
     showError('inputError','Có lỗi xảy ra: '+e.message+'. Vui lòng thử lại.');
@@ -1247,6 +1236,9 @@ function renderResult(r, council, docTypeName, levelLabel) {
   const code='SKKN-'+Math.random().toString(36).slice(2,8).toUpperCase();
 
   document.getElementById('resultCard').innerHTML=`
+  <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:10px 16px;margin-bottom:12px;font-size:12px;color:#5a4a1a;line-height:1.8">
+    ⚠️ <strong>Lưu ý pháp lý:</strong> Kết quả thẩm định này được tạo bởi AI và chỉ mang tính chất <strong>tham khảo hỗ trợ</strong>, không thay thế quyết định chính thức của Hội đồng thẩm định có thẩm quyền. Kết quả cuối cùng phải được Hội đồng xem xét, ký xác nhận và chịu trách nhiệm theo đúng quy định hiện hành.
+  </div>
   <div class="result-wrap">
     <div class="result-header">
       <h2>📊 Phiếu thẩm định ${docTypeName}</h2>
@@ -1308,7 +1300,90 @@ function renderResult(r, council, docTypeName, levelLabel) {
 
 let lastResult = null;
 let lastMeta = {};
+// ===== HISTORY =====
+const HISTORY_KEY = 'skkn_history_v1';
+const HISTORY_MAX = 50;
 
+function saveHistory(result, meta) {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    const entry = {
+      id: Date.now(),
+      savedAt: new Date().toLocaleString('vi-VN'),
+      title: result.title || '(không rõ tên)',
+      author: result.author || '',
+      verdict: result.verdict,
+      total: result.total,
+      totalMax: result.totalMax,
+      levelLabel: meta.levelLabel || '',
+      docTypeName: meta.docTypeName || '',
+      council: meta.council || '',
+      result: result,
+      meta: meta,
+    };
+    list.unshift(entry);
+    if (list.length > HISTORY_MAX) list.splice(HISTORY_MAX);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+  } catch(e) { console.warn('Lỗi lưu lịch sử:', e); }
+}
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function renderHistory() {
+  const list = loadHistory();
+  const el = document.getElementById('historyList');
+  if (!list.length) {
+    el.innerHTML = '<div class="hist-empty">📭 Chưa có lịch sử thẩm định nào.<br><span style="font-size:12px">Sau khi thẩm định xong, kết quả sẽ tự động lưu tại đây.</span></div>';
+    return;
+  }
+  const vs = {'Xuất sắc':'#27ae60','Tốt':'#2980b9','Đạt':'#c9a84c','Không đạt':'#c0392b'};
+  el.innerHTML = list.map((h,i) => `
+    <div class="hist-item" onclick="loadHistoryItem(${i})" title="Bấm để xem lại kết quả">
+      <div class="hist-score">
+        <div class="hn" style="color:${vs[h.verdict]||'#c9a84c'}">${h.total}</div>
+        <div class="hd">/${h.totalMax}</div>
+      </div>
+      <div class="hist-meta">
+        <div class="ht">${h.title}</div>
+        <div class="hm">
+          ${h.verdict} &nbsp;|&nbsp; ${h.docTypeName} &nbsp;|&nbsp; ${h.levelLabel}<br>
+          ${h.council ? h.council+' &nbsp;|&nbsp; ' : ''}${h.savedAt}
+        </div>
+      </div>
+      <button class="hist-del" title="Xóa mục này" onclick="event.stopPropagation();deleteHistoryItem(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function loadHistoryItem(i) {
+  const list = loadHistory();
+  if (!list[i]) return;
+  const h = list[i];
+  lastResult = h.result;
+  lastMeta = h.meta;
+  renderResult(h.result, h.meta.council, h.meta.docTypeName, h.meta.levelLabel);
+  goTab('result', null);
+}
+
+function deleteHistoryItem(i) {
+  if (!confirm('Xóa mục lịch sử này?')) return;
+  const list = loadHistory();
+  list.splice(i, 1);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+  renderHistory();
+}
+
+function clearHistory() {
+  if (!confirm('Xóa toàn bộ lịch sử thẩm định? Không thể khôi phục.')) return;
+  localStorage.removeItem(HISTORY_KEY);
+  renderHistory();
+}
 function newAssess(){
   document.getElementById('resultEmpty').style.display='block';
   document.getElementById('resultContent').style.display='none';
@@ -1327,321 +1402,288 @@ function exportWord() {
   const nam = now.getFullYear();
   const pct = Math.round(r.total / r.totalMax * 100);
   const code = 'SKKN-' + Math.random().toString(36).slice(2,8).toUpperCase();
+  const unitName = document.getElementById('unitName')?.value || '';
+  const deptName = document.getElementById('deptName')?.value || '';
 
   const scoresRows = (r.scores||[]).map((s,i) =>
     `<tr>
-      <td style="text-align:center;width:30px">${i+1}</td>
-      <td>${s.name}</td>
-      <td style="text-align:center;width:80px">${s.score}/${s.max}</td>
-      <td>${s.comment||''}</td>
+      <td style="text-align:center;width:30px;border:1px solid #000;padding:6px 8px">${i+1}</td>
+      <td style="border:1px solid #000;padding:6px 8px;font-weight:bold">${s.name}</td>
+      <td style="text-align:center;width:70px;border:1px solid #000;padding:6px 8px">${s.score}/${s.max}</td>
+      <td style="border:1px solid #000;padding:6px 8px;line-height:1.6">${s.comment||''}</td>
     </tr>`
   ).join('');
 
-  const strengths = (r.strengths||[]).map(s=>`<li>${s}</li>`).join('');
+  const strengths = (r.strengths||[]).map(s=>`<li style="margin-bottom:5px;line-height:1.7">${s}</li>`).join('');
 
   const weaknesses = (r.weaknesses||[]).map((w,i) => {
-    if(typeof w==='string') return `<li>${w}</li>`;
-    return `<li><strong>${i+1}. ${w.point||''}</strong>${w.location?` <em>(${w.location})</em>`:''}: ${w.detail||''}</li>`;
+    if(typeof w==='string') return `<li style="margin-bottom:5px;line-height:1.7">${w}</li>`;
+    return `<li style="margin-bottom:5px;line-height:1.7"><b>${i+1}. ${w.point||''}</b>${w.location?' <i>('+w.location+')</i>':''}: ${w.detail||''}</li>`;
   }).join('');
 
   const recs = (r.recommendations||[]).map((rec,i) => {
-    if(typeof rec==='string') return `<li>${rec}</li>`;
-    return `<li><strong>${i+1}. ${rec.point||''}</strong>${rec.target?` <em>(${rec.target})</em>`:''}: ${rec.detail||''}</li>`;
+    if(typeof rec==='string') return `<li style="margin-bottom:5px;line-height:1.7">${rec}</li>`;
+    return `<li style="margin-bottom:5px;line-height:1.7"><b>${i+1}. ${rec.point||''}</b>${rec.target?' <i>('+rec.target+')</i>':''}: ${rec.detail||''}</li>`;
   }).join('');
 
   const extraSection = r.extraAnalysis ? `
-    <h2 style="font-size:13pt;text-align:left;text-transform:none;border-bottom:1px solid #333;padding-bottom:4px;margin-top:20px">IV. PHÂN TÍCH BỔ SUNG THEO YÊU CẦU</h2>
-    <p style="font-style:italic">${r.extraAnalysis}</p>
+    <p style="font-family:'Times New Roman',serif;font-size:14pt;font-weight:bold;text-transform:uppercase;margin:18px 0 8px 0">V. Phân tích bổ sung theo yêu cầu</p>
+    <p style="font-family:'Times New Roman',serif;font-size:14pt;font-style:italic;line-height:1.8;text-align:justify;border:1px solid #000;padding:12px 16px">${r.extraAnalysis}</p>
   ` : '';
 
+  const soMuc = r.extraAnalysis ? 'VI' : 'V';
+
   const html = `
-<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns='http://www.w3.org/TR/REC-html40'>
 <head>
 <meta charset='utf-8'>
 <title>Phiếu Thẩm Định ${docTypeName||'SKKN'}</title>
+<!--[if gte mso 9]>
+<xml>
+  <w:WordDocument>
+    <w:View>Print</w:View>
+    <w:Zoom>100</w:Zoom>
+    <w:DoNotOptimizeForBrowser/>
+  </w:WordDocument>
+</xml>
+<![endif]-->
 <style>
-  @page { margin: 2.5cm 3cm 2.5cm 3.5cm; size: A4; }
+  @page {
+    size: A4;
+    margin: 2.0cm 2.0cm 2.0cm 3.0cm;
+    mso-page-orientation: portrait;
+  }
   body {
     font-family: 'Times New Roman', Times, serif;
-    font-size: 13pt;
-    line-height: 1.8;
-    color: #000;
-  }
-  /* HEADER HÀNH CHÍNH */
-  .admin-header {
-    display: table;
-    width: 100%;
-    margin-bottom: 6px;
-  }
-  .admin-header-left, .admin-header-right {
-    display: table-cell;
-    width: 50%;
-    text-align: center;
-    vertical-align: top;
-    font-size: 12pt;
-  }
-  .admin-header-left .unit-name {
-    font-weight: bold;
-    text-transform: uppercase;
-    font-size: 12pt;
-  }
-  .admin-header-left .dept-name {
-    font-weight: bold;
-    text-transform: uppercase;
-    font-size: 11pt;
-    border-bottom: 1px solid #000;
-    display: inline-block;
-    padding-bottom: 2px;
-  }
-  .admin-header-right .country-name {
-    font-weight: bold;
-    font-size: 12pt;
-  }
-  .admin-header-right .motto {
-    font-size: 12pt;
-    text-decoration: underline;
-  }
-  .admin-header-right .doc-location-date {
-    font-style: italic;
-    font-size: 11pt;
-    margin-top: 6px;
-  }
-  /* SỐ VĂN BẢN */
-  .doc-number {
-    text-align: left;
-    font-size: 12pt;
-    font-style: italic;
-    margin-bottom: 30px;
-    margin-top: 6px;
-  }
-  /* TIÊU ĐỀ VĂN BẢN */
-  .doc-title-block {
-    text-align: center;
-    margin: 10px 0 24px 0;
-  }
-  .doc-type-label {
-    font-size: 13pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  .doc-title-underline {
-    width: 60px;
-    border-top: 1px solid #000;
-    margin: 4px auto;
-  }
-  /* BẢNG THÔNG TIN */
-  .info-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 16px;
-    font-size: 12.5pt;
-  }
-  .info-table td {
-    padding: 4px 8px;
-    border: none;
-    vertical-align: top;
-  }
-  .info-table td:first-child {
-    width: 200px;
-    font-weight: bold;
-    white-space: nowrap;
-  }
-  /* TIÊU ĐỀ MỤC */
-  h2 {
-    font-size: 13pt;
-    font-weight: bold;
-    margin-top: 20px;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    text-align: left;
-  }
-  /* BẢNG TIÊU CHÍ */
-  .score-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 10px 0 16px 0;
-    font-size: 12pt;
-  }
-  .score-table th {
-    background: #f0f0f0;
-    color: #000;
-    font-weight: bold;
-    padding: 7px 10px;
-    border: 1px solid #000;
-    text-align: center;
-  }
-  .score-table td {
-    padding: 7px 10px;
-    border: 1px solid #000;
-    vertical-align: top;
-    font-size: 12pt;
-  }
-  .score-table tfoot td {
-    font-weight: bold;
-    background: #f0f0f0;
-    border: 1px solid #000;
-    padding: 7px 10px;
-  }
-  /* DANH SÁCH */
-  ul, ol {
-    margin: 6px 0 10px 24px;
-    padding: 0;
-    font-size: 12.5pt;
-  }
-  li {
-    margin-bottom: 6px;
-    line-height: 1.8;
-  }
-  /* KẾT LUẬN */
-  .conclusion-block {
-    border: 1px solid #999;
-    padding: 12px 16px;
-    margin: 10px 0 20px 0;
-    background: #fafafa;
-    font-size: 12.5pt;
-    line-height: 1.9;
-  }
-  /* TỔNG ĐIỂM BANNER */
-  .score-banner-text {
     font-size: 14pt;
-    font-weight: bold;
-    text-align: center;
-    margin: 10px 0;
-    padding: 8px;
-    border: 2px solid #000;
+    line-height: 1.5;
+    color: #000000;
+    margin: 0;
+    padding: 0;
   }
-  /* KÝ TÊN */
-  .signature-block {
-    display: table;
-    width: 100%;
-    margin-top: 40px;
-  }
-  .sig-left, .sig-right {
-    display: table-cell;
-    width: 50%;
-    text-align: center;
-    vertical-align: top;
-    font-size: 12pt;
-  }
-  .sig-title { font-weight: bold; text-transform: uppercase; }
-  .sig-note { font-style: italic; font-size: 11pt; }
-  .sig-space { height: 70px; }
-  .sig-name { font-weight: bold; }
-  /* CHÂN TRANG */
-  .doc-footer {
-    margin-top: 20px;
-    border-top: 1px solid #ccc;
-    padding-top: 8px;
-    font-size: 10pt;
-    color: #555;
-    font-style: italic;
-    text-align: center;
-  }
+  p { margin: 0; padding: 0; }
+  table { border-collapse: collapse; }
+  td { vertical-align: top; }
 </style>
 </head>
 <body>
 
-<!-- PHẦN ĐẦU HÀNH CHÍNH -->
-<div class="admin-header">
-  <div class="admin-header-left">
-    <div class="unit-name">PHÒNG GD&amp;ĐT / SỞ GD&amp;ĐT</div>
-    <div>&nbsp;</div>
-    <div class="dept-name">${council || 'HỘI ĐỒNG THẨM ĐỊNH'}</div>
-  </div>
-  <div class="admin-header-right">
-    <div class="country-name">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-    <div class="motto">Độc lập – Tự do – Hạnh phúc</div>
-    <div class="doc-location-date">..........., ngày ${ngay} tháng ${thang} năm ${nam}</div>
-  </div>
-</div>
+<!-- ===== PHẦN ĐẦU HÀNH CHÍNH (dùng table thật) ===== -->
+<table width="100%" border="0" cellpadding="0" cellspacing="0"
+       style="width:100%;margin-bottom:2pt">
+  <tr>
+    <!-- CỘT TRÁI: Cơ quan -->
+    <td width="50%" style="width:50%;text-align:center;vertical-align:top">
+      <p style="font-family:'Times New Roman',serif;font-size:12pt;font-weight:normal;
+                text-transform:uppercase;text-align:center;line-height:1.4;margin:0">
+        ${deptName || 'PHÒNG GIÁO DỤC VÀ ĐÀO TẠO'}
+      </p>
+      <p style="font-family:'Times New Roman',serif;font-size:12pt;font-weight:bold;
+                text-transform:uppercase;text-align:center;line-height:1.4;
+                border-bottom:1px solid #000;display:inline-block;padding-bottom:2px;margin:2pt 0 0 0">
+        ${unitName || council || 'HỘI ĐỒNG THẨM ĐỊNH'}
+      </p>
+    </td>
+    <!-- CỘT PHẢI: Quốc hiệu -->
+    <td width="50%" style="width:50%;text-align:center;vertical-align:top">
+      <p style="font-family:'Times New Roman',serif;font-size:13pt;font-weight:bold;
+                text-transform:uppercase;text-align:center;line-height:1.4;margin:0">
+        CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+      </p>
+      <p style="font-family:'Times New Roman',serif;font-size:13pt;font-weight:bold;
+                text-decoration:underline;text-align:center;line-height:1.4;margin:0">
+        Độc lập – Tự do – Hạnh phúc
+      </p>
+      <p style="font-family:'Times New Roman',serif;font-size:13pt;font-style:italic;
+                text-align:center;margin:4pt 0 0 0;line-height:1.5">
+        ..........., ngày ${ngay} tháng ${thang} năm ${nam}
+      </p>
+    </td>
+  </tr>
+</table>
 
-<div class="doc-number">Số: ${code}/PĐTĐ-SKKN</div>
+<!-- Số và ký hiệu -->
+<p style="font-family:'Times New Roman',serif;font-size:13pt;font-style:italic;
+          margin:8pt 0 0 0;line-height:1.5">
+  Số: ${code}/PĐTĐ-SKKN
+</p>
 
-<!-- TIÊU ĐỀ -->
-<div class="doc-title-block">
-  <div class="doc-type-label">PHIẾU THẨM ĐỊNH</div>
-  <div style="font-size:13pt;font-weight:bold;text-transform:uppercase;margin-top:4px">${docTypeName || 'Sáng kiến kinh nghiệm'}</div>
-  <div class="doc-title-underline"></div>
-</div>
+<!-- ===== TIÊU ĐỀ VĂN BẢN ===== -->
+<p style="font-family:'Times New Roman',serif;font-size:14pt;font-weight:bold;
+          text-transform:uppercase;text-align:center;
+          margin:20pt 0 4pt 0;line-height:1.5;letter-spacing:1px">
+  PHIẾU THẨM ĐỊNH
+</p>
+<p style="font-family:'Times New Roman',serif;font-size:14pt;font-weight:bold;
+          text-transform:uppercase;text-align:center;
+          margin:0 0 2pt 0;line-height:1.5">
+  ${docTypeName || 'Sáng kiến kinh nghiệm'}
+</p>
+<p style="text-align:center;margin:0 0 16pt 0">
+  <span style="display:inline-block;border-top:1px solid #000;width:60px">&nbsp;</span>
+</p>
 
-<!-- THÔNG TIN TÀI LIỆU -->
-<table class="info-table">
-  <tr><td>Tên sáng kiến:</td><td><strong>${r.title || '...'}</strong></td></tr>
-  <tr><td>Tác giả:</td><td>${r.author || '...'}</td></tr>
-  <tr><td>Cấp đánh giá:</td><td>${levelLabel || 'Cấp Trường'}</td></tr>
-  <tr><td>Hội đồng thẩm định:</td><td>${council || '...'}</td></tr>
-  <tr><td>Ngày thẩm định:</td><td>Ngày ${ngay} tháng ${thang} năm ${nam}</td></tr>
+<!-- ===== THÔNG TIN TÀI LIỆU (dùng table thật) ===== -->
+<table width="100%" border="0" cellpadding="4" cellspacing="0"
+       style="width:100%;margin-bottom:10pt;font-family:'Times New Roman',serif;font-size:14pt">
+  <tr>
+    <td width="170" style="width:170px;font-weight:bold;white-space:nowrap;padding:3pt 6pt;vertical-align:top">Tên sáng kiến:</td>
+    <td style="padding:3pt 6pt;vertical-align:top"><b>${r.title || '......................................'}</b></td>
+  </tr>
+  <tr>
+    <td style="font-weight:bold;padding:3pt 6pt;vertical-align:top">Tác giả:</td>
+    <td style="padding:3pt 6pt;vertical-align:top">${r.author || '......................................'}</td>
+  </tr>
+  <tr>
+    <td style="font-weight:bold;padding:3pt 6pt;vertical-align:top">Cấp đánh giá:</td>
+    <td style="padding:3pt 6pt;vertical-align:top">${levelLabel || 'Cấp Trường'}</td>
+  </tr>
+  <tr>
+    <td style="font-weight:bold;padding:3pt 6pt;vertical-align:top">Hội đồng thẩm định:</td>
+    <td style="padding:3pt 6pt;vertical-align:top">${council || '......................................'}</td>
+  </tr>
+  <tr>
+    <td style="font-weight:bold;padding:3pt 6pt;vertical-align:top">Ngày thẩm định:</td>
+    <td style="padding:3pt 6pt;vertical-align:top">Ngày ${ngay} tháng ${thang} năm ${nam}</td>
+  </tr>
 </table>
 
 ${r.summary ? `
-<h2>I. TÓM TẮT NỘI DUNG</h2>
-<p style="font-size:12.5pt;line-height:1.8">${r.summary}</p>
+<p style="font-family:'Times New Roman',serif;font-size:14pt;font-weight:bold;
+          text-transform:uppercase;margin:16pt 0 6pt 0;line-height:1.5">
+  I. Tóm tắt nội dung
+</p>
+<p style="font-family:'Times New Roman',serif;font-size:14pt;line-height:1.8;
+          text-align:justify;margin:0">${r.summary}</p>
 ` : ''}
 
-<!-- TỔNG ĐIỂM -->
-<div class="score-banner-text">
-  TỔNG ĐIỂM: ${r.total} / ${r.totalMax} điểm &nbsp;|&nbsp; TỶ LỆ: ${pct}% &nbsp;|&nbsp; XẾP LOẠI: ${r.verdict.toUpperCase()}
-</div>
+<!-- ===== TỔNG ĐIỂM ===== -->
+<table width="100%" border="1" cellpadding="8" cellspacing="0"
+       style="width:100%;margin:12pt 0;border:2px solid #000;
+              font-family:'Times New Roman',serif;font-size:14pt;font-weight:bold;text-align:center">
+  <tr>
+    <td style="text-align:center;border:2px solid #000;padding:8pt">
+      TỔNG ĐIỂM: ${r.total} / ${r.totalMax} &nbsp;&nbsp;|&nbsp;&nbsp;
+      TỶ LỆ: ${pct}% &nbsp;&nbsp;|&nbsp;&nbsp;
+      XẾP LOẠI: ${r.verdict.toUpperCase()}
+    </td>
+  </tr>
+</table>
 
-<!-- BẢNG TIÊU CHÍ -->
-<h2>II. ĐÁNH GIÁ THEO TIÊU CHÍ</h2>
-<table class="score-table">
+<!-- ===== BẢNG TIÊU CHÍ ===== -->
+<p style="font-family:'Times New Roman',serif;font-size:14pt;font-weight:bold;
+          text-transform:uppercase;margin:16pt 0 6pt 0;line-height:1.5">
+  ${r.summary ? 'II' : 'I'}. Đánh giá theo tiêu chí
+</p>
+<table width="100%" border="1" cellpadding="7" cellspacing="0"
+       style="width:100%;border-collapse:collapse;margin-bottom:14pt;
+              font-family:'Times New Roman',serif;font-size:13pt">
   <thead>
-    <tr>
-      <th style="width:30px">STT</th>
-      <th>Tiêu chí đánh giá</th>
-      <th style="width:90px">Điểm số</th>
-      <th>Nhận xét chi tiết</th>
+    <tr style="background:#f2f2f2">
+      <th style="border:1px solid #000;padding:7pt 8pt;text-align:center;width:30px;font-weight:bold">STT</th>
+      <th style="border:1px solid #000;padding:7pt 8pt;text-align:center;width:25%;font-weight:bold">Tiêu chí đánh giá</th>
+      <th style="border:1px solid #000;padding:7pt 8pt;text-align:center;width:70px;font-weight:bold">Điểm số</th>
+      <th style="border:1px solid #000;padding:7pt 8pt;text-align:center;font-weight:bold">Nhận xét chi tiết</th>
     </tr>
   </thead>
   <tbody>${scoresRows}</tbody>
   <tfoot>
-    <tr>
-      <td colspan="2" style="text-align:right">TỔNG CỘNG</td>
-      <td style="text-align:center">${r.total}/${r.totalMax}</td>
-      <td style="text-align:center">${r.verdict}</td>
+    <tr style="background:#f2f2f2">
+      <td colspan="2" style="border:1px solid #000;padding:7pt 8pt;text-align:right;font-weight:bold">TỔNG CỘNG</td>
+      <td style="border:1px solid #000;padding:7pt 8pt;text-align:center;font-weight:bold">${r.total}/${r.totalMax}</td>
+      <td style="border:1px solid #000;padding:7pt 8pt;font-weight:bold">Xếp loại: <b>${r.verdict}</b></td>
     </tr>
   </tfoot>
 </table>
 
-<!-- ƯU ĐIỂM & HẠN CHẾ -->
-<h2>III. NHẬN XÉT TỔNG THỂ</h2>
+<!-- ===== NHẬN XÉT TỔNG THỂ ===== -->
+<p style="font-family:'Times New Roman',serif;font-size:14pt;font-weight:bold;
+          text-transform:uppercase;margin:16pt 0 6pt 0;line-height:1.5">
+  ${r.summary ? 'III' : 'II'}. Nhận xét tổng thể
+</p>
 
-<p style="font-size:12.5pt"><strong>1. Ưu điểm:</strong></p>
-<ul>${strengths}</ul>
+<p style="font-family:'Times New Roman',serif;font-size:14pt;font-weight:bold;margin:0 0 4pt 0">
+  1. Ưu điểm:
+</p>
+<ul style="margin:0 0 10pt 24pt;padding:0;font-family:'Times New Roman',serif;font-size:14pt">
+  ${strengths}
+</ul>
 
-<p style="font-size:12.5pt"><strong>2. Hạn chế:</strong></p>
-<ul>${weaknesses}</ul>
+<p style="font-family:'Times New Roman',serif;font-size:14pt;font-weight:bold;margin:8pt 0 4pt 0">
+  2. Hạn chế:
+</p>
+<ul style="margin:0 0 10pt 24pt;padding:0;font-family:'Times New Roman',serif;font-size:14pt">
+  ${weaknesses}
+</ul>
 
-<p style="font-size:12.5pt"><strong>3. Đề xuất cải tiến:</strong></p>
-<ul>${recs}</ul>
+<p style="font-family:'Times New Roman',serif;font-size:14pt;font-weight:bold;margin:8pt 0 4pt 0">
+  3. Đề xuất cải tiến:
+</p>
+<ul style="margin:0 0 10pt 24pt;padding:0;font-family:'Times New Roman',serif;font-size:14pt">
+  ${recs}
+</ul>
 
 ${extraSection}
 
-<!-- KẾT LUẬN -->
-<h2>${r.extraAnalysis ? 'V' : 'IV'}. KẾT LUẬN VÀ KIẾN NGHỊ</h2>
-<div class="conclusion-block">${r.conclusion || ''}</div>
+<!-- ===== KẾT LUẬN ===== -->
+<p style="font-family:'Times New Roman',serif;font-size:14pt;font-weight:bold;
+          text-transform:uppercase;margin:16pt 0 6pt 0;line-height:1.5">
+  ${r.summary ? (r.extraAnalysis ? 'V' : 'IV') : (r.extraAnalysis ? 'IV' : 'III')}. Kết luận và kiến nghị
+</p>
+<p style="font-family:'Times New Roman',serif;font-size:14pt;font-style:italic;
+          line-height:1.9;text-align:justify;
+          border:1px solid #000;padding:12pt 14pt;margin:0 0 20pt 0">
+  ${r.conclusion || ''}
+</p>
 
-<!-- KÝ TÊN -->
-<div class="signature-block">
-  <div class="sig-left">
-    <div class="sig-title">Thư ký hội đồng</div>
-    <div class="sig-note">(Ký, ghi rõ họ tên)</div>
-    <div class="sig-space"></div>
-    <div class="sig-name">................................</div>
-  </div>
-  <div class="sig-right">
-    <div class="sig-title">Chủ tịch hội đồng</div>
-    <div class="sig-note">(Ký tên, đóng dấu)</div>
-    <div class="sig-space"></div>
-    <div class="sig-name">................................</div>
-  </div>
-</div>
+<!-- ===== CHỮ KÝ (dùng table thật, Thư ký trái - Chủ tịch phải theo NĐ30) ===== -->
+<table width="100%" border="0" cellpadding="0" cellspacing="0"
+       style="width:100%;margin-top:36pt;font-family:'Times New Roman',serif;font-size:13pt">
+  <tr>
+    <td width="50%" style="width:50%;text-align:center;vertical-align:top">
+      <p style="font-weight:bold;text-transform:uppercase;text-align:center;margin:0;line-height:1.6">
+        Thư ký hội đồng
+      </p>
+      <p style="font-style:italic;text-align:center;margin:0;line-height:1.6;font-size:12pt">
+        (Ký, ghi rõ họ tên)
+      </p>
+      <p style="text-align:center;margin:50pt 0 0 0;font-weight:bold">
+        ................................
+      </p>
+    </td>
+    <td width="50%" style="width:50%;text-align:center;vertical-align:top">
+      <p style="font-weight:bold;text-transform:uppercase;text-align:center;margin:0;line-height:1.6">
+        Chủ tịch hội đồng
+      </p>
+      <p style="font-style:italic;text-align:center;margin:0;line-height:1.6;font-size:12pt">
+        (Ký tên, đóng dấu)
+      </p>
+      <p style="text-align:center;margin:50pt 0 0 0;font-weight:bold">
+        ................................
+      </p>
+    </td>
+  </tr>
+</table>
 
-<div class="doc-footer">
-  Phiếu thẩm định tự động – Trợ Lý Thẩm Định SKKN | Số: ${code} | Ngày ${ngay}/${thang}/${nam}
-</div>
+<!-- ===== DISCLAIMER ===== -->
+<p style="font-family:'Times New Roman',serif;font-size:11pt;font-style:italic;
+          color:#444;line-height:1.7;
+          border:1px solid #999;padding:8pt 12pt;margin:24pt 0 6pt 0">
+  <b>Lưu ý:</b> Phiếu thẩm định này được hỗ trợ tạo bởi công cụ AI và chỉ mang tính chất tham khảo.
+  Kết quả chính thức phải được Hội đồng thẩm định có thẩm quyền xem xét, ký xác nhận và chịu trách nhiệm
+  theo đúng quy định hiện hành của Bộ GD&amp;ĐT.
+</p>
+
+<!-- ===== CHÂN TRANG ===== -->
+<p style="font-family:'Times New Roman',serif;font-size:10pt;font-style:italic;
+          color:#777;text-align:center;
+          border-top:1px solid #ccc;padding-top:6pt;margin-top:8pt">
+  Hỗ trợ bởi Trợ Lý Thẩm Định SKKN (AI) &nbsp;|&nbsp;
+  Số tham chiếu: ${code} &nbsp;|&nbsp;
+  Ngày ${ngay}/${thang}/${nam}
+</p>
 
 </body>
 </html>`;
