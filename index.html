@@ -318,7 +318,8 @@ hr.div { border: none; border-top: 1px solid #ede8dc; margin: 20px 0; }
   <div id="pane-criteria" class="tab-pane">
     <div class="card">
       <div class="card-title">📋 Tiêu chí chuẩn ngành Giáo dục</div>
-      <p style="font-size:12px;color:#888;margin-bottom:14px"> Có thể điều chỉnh điểm tối đa.</p>
+      <p style="font-size:12px;color:#888;margin-bottom:8px">Có thể điều chỉnh điểm tối đa, thêm/xóa/sửa tiêu chí.</p>
+      <div id="resetCriteriaArea"></div>
       <table id="defaultTable">
         <thead><tr><th>#</th><th>Tiêu chí</th><th>Điểm tối đa</th><th>Loại</th></tr></thead>
         <tbody id="defaultBody"></tbody>
@@ -743,9 +744,7 @@ const FREE_MODELS = [
   'google/gemma-4-31b-it:free',
   'nvidia/nemotron-3-super-120b-a12b:free',
   'openai/gpt-oss-120b:free',
-  'qwen/qwen3-coder:free',
   'meta-llama/llama-3.2-3b-instruct:free',
-  'openrouter/free',
 ];
 
 // ===== INIT =====
@@ -763,6 +762,15 @@ window.onload = () => {
 function renderCriteria() {
   const tbody = document.getElementById('defaultBody');
   const docType = document.getElementById('docType')?.value || 'skkn';
+
+  // Hiển thị nút hoàn tác
+  const resetArea = document.getElementById('resetCriteriaArea');
+  if (resetArea) {
+    resetArea.innerHTML = CRITERIA_MAP[docType]?.length
+      ? `<button class="btn btn-outline" style="font-size:12px;padding:6px 14px;margin-bottom:10px" onclick="resetCriteria()">↩️ Hoàn tác về mặc định</button>`
+      : '';
+  }
+
   tbody.innerHTML = '';
 
   if (docType === 'khac' || CRITERIA.length === 0) {
@@ -777,9 +785,23 @@ function renderCriteria() {
   CRITERIA.forEach((c,i) => {
     tbody.innerHTML += `<tr>
       <td style="font-family:monospace;color:#bbb;font-weight:700">${i+1}</td>
-      <td><div style="font-weight:600">${c.name}</div><div style="font-size:11px;color:#999;margin-top:2px">${c.desc}</div></td>
+      <td>
+        <input type="text" value="${c.name}" style="font-weight:600;font-size:13px;width:100%;margin-bottom:4px;background:#fffdf5;border:1px dashed #d4c9b0;border-radius:3px;padding:3px 7px"
+          placeholder="Tên tiêu chí..."
+          oninput="CRITERIA[${i}].name=this.value">
+        <input type="text" value="${c.desc||''}" style="font-size:11px;color:#888;width:100%;background:transparent;border:1px dashed #ede8dc;border-radius:3px;padding:2px 7px"
+          placeholder="Mô tả tiêu chí (tùy chọn)..."
+          oninput="CRITERIA[${i}].desc=this.value">
+      </td>
       <td><input type="number" min="1" max="100" value="${c.max}" id="max_${c.id}" onchange="updateTotal()"></td>
-      <td><span class="badge ${c.req?'badge-req':'badge-opt'}">${c.req?'Bắt buộc':'Phụ'}</span></td>
+      <td>
+        <select id="req_${c.id}" style="padding:3px 7px;border:1px solid #d4c9b0;border-radius:3px;font-family:inherit;font-size:12px;background:#f5f0e8;cursor:pointer"
+          onchange="CRITERIA[${i}].req=this.value==='true'">
+          <option value="true" ${c.req?'selected':''}>Bắt buộc</option>
+          <option value="false" ${!c.req?'selected':''}>Phụ thêm</option>
+        </select>
+      </td>
+      <td><button class="del-btn" title="Xóa tiêu chí này" onclick="CRITERIA.splice(${i},1);renderCriteria();updateTotal()">×</button></td>
     </tr>`;
   });
   updateTotal();
@@ -791,7 +813,65 @@ function updateTotal() {
   customCriteria.forEach(c => { t += c.max||0; });
   document.getElementById('totalDisplay').textContent = t;
 }
+// Backup gốc bất biến — không bao giờ bị thay đổi
+const CRITERIA_DEFAULT = JSON.parse(JSON.stringify({
+  skkn: [
+    {id:'c1', name:'Tính mới và sáng tạo', desc:'Giải pháp có điểm mới, khác biệt so với cách làm cũ; có tư duy đổi mới trong tiếp cận vấn đề', max:25, req:true},
+    {id:'c2', name:'Tính khoa học', desc:'Cơ sở lý luận vững chắc, phương pháp nghiên cứu hợp lý, trích dẫn đúng chuẩn', max:20, req:true},
+    {id:'c3', name:'Tính thực tiễn', desc:'Xuất phát từ thực tế đơn vị, giải quyết vấn đề cụ thể, có minh chứng rõ ràng', max:20, req:true},
+    {id:'c4', name:'Hiệu quả áp dụng', desc:'Kết quả đạt được sau áp dụng, có số liệu so sánh trước–sau, dữ liệu minh chứng rõ ràng', max:20, req:true},
+    {id:'c5', name:'Khả năng nhân rộng', desc:'Có thể áp dụng ở nhiều đơn vị tương tự trong và ngoài địa phương', max:10, req:false},
+    {id:'c6', name:'Hình thức trình bày', desc:'Bố cục rõ ràng, văn phong chuẩn, đúng quy định về thể thức văn bản', max:5, req:false},
+  ],
+  giao_an: [
+    {id:'g1', name:'Xác định mục tiêu bài học', desc:'Mục tiêu rõ ràng theo 3 thành phần: phẩm chất, năng lực chung, năng lực đặc thù; phù hợp chuẩn CT 2018', max:20, req:true},
+    {id:'g2', name:'Thiết kế hoạt động học', desc:'Các hoạt động (Mở đầu, Hình thành kiến thức, Luyện tập, Vận dụng) được thiết kế logic, sáng tạo, phát huy tích cực học sinh', max:25, req:true},
+    {id:'g3', name:'Phương pháp & kỹ thuật dạy học', desc:'Sử dụng phương pháp dạy học tích cực phù hợp nội dung; có kỹ thuật dạy học hiện đại (thảo luận, dự án, STEM…)', max:20, req:true},
+    {id:'g4', name:'Thiết bị & học liệu', desc:'Thiết bị dạy học, học liệu, phương tiện hỗ trợ phù hợp, khả thi, đa dạng', max:10, req:true},
+    {id:'g5', name:'Kiểm tra đánh giá', desc:'Có công cụ đánh giá học sinh trong tiết học (phiếu học tập, rubric, câu hỏi…), đánh giá đúng mục tiêu', max:15, req:true},
+    {id:'g6', name:'Tính khả thi & phù hợp đối tượng', desc:'Nội dung và thời lượng phù hợp trình độ học sinh, điều kiện thực tế nhà trường', max:5, req:false},
+    {id:'g7', name:'Hình thức trình bày', desc:'Đúng mẫu kế hoạch bài dạy hiện hành, bố cục rõ ràng, ngôn ngữ chuẩn xác', max:5, req:false},
+  ],
+  de_tai: [
+    {id:'d1', name:'Tính cấp thiết của vấn đề', desc:'Vấn đề nghiên cứu có ý nghĩa thực tiễn, xuất phát từ nhu cầu thực tế giáo dục, được lý giải rõ ràng', max:15, req:true},
+    {id:'d2', name:'Tổng quan & cơ sở lý luận', desc:'Tổng quan tài liệu đầy đủ, hệ thống lý luận vững chắc, trích dẫn đúng chuẩn APA/khoa học', max:20, req:true},
+    {id:'d3', name:'Phương pháp nghiên cứu', desc:'Phương pháp nghiên cứu phù hợp, thiết kế nghiên cứu rõ ràng, mẫu nghiên cứu đủ đại diện', max:20, req:true},
+    {id:'d4', name:'Kết quả & phân tích', desc:'Kết quả trình bày rõ ràng, phân tích sâu, có bảng số liệu/biểu đồ minh họa, kết luận logic', max:25, req:true},
+    {id:'d5', name:'Tính mới & đóng góp khoa học', desc:'Có điểm mới so với các nghiên cứu trước, đóng góp giá trị cho lý luận hoặc thực tiễn giáo dục', max:10, req:true},
+    {id:'d6', name:'Hình thức & tài liệu tham khảo', desc:'Trình bày đúng chuẩn đề tài nghiên cứu, danh mục TLTK đầy đủ, đúng quy cách', max:10, req:false},
+  ],
+  bao_cao: [
+    {id:'b1', name:'Xác định mục đích & yêu cầu', desc:'Mục đích báo cáo rõ ràng, bám sát chủ đề chuyên đề, đáp ứng yêu cầu của cấp trên hoặc kế hoạch', max:15, req:true},
+    {id:'b2', name:'Nội dung chuyên đề', desc:'Nội dung phong phú, có chiều sâu chuyên môn, bám sát thực tiễn dạy học, có dẫn chứng cụ thể', max:30, req:true},
+    {id:'b3', name:'Giải pháp & minh chứng', desc:'Có giải pháp cụ thể, rõ ràng; minh chứng thuyết phục (hình ảnh, số liệu, sản phẩm học sinh…)', max:25, req:true},
+    {id:'b4', name:'Tính ứng dụng & lan tỏa', desc:'Giải pháp có thể áp dụng tại đơn vị và chia sẻ với đồng nghiệp; có định hướng triển khai tiếp theo', max:20, req:true},
+    {id:'b5', name:'Hình thức trình bày', desc:'Bố cục khoa học, ngôn ngữ chuẩn mực, đúng thể thức văn bản hành chính', max:10, req:false},
+  ],
+  sinh_hoat_cm: [
+    {id:'sh1', name:'Chuẩn bị sinh hoạt', desc:'Có kế hoạch, nội dung sinh hoạt được chuẩn bị đầy đủ, phân công rõ ràng trước buổi họp', max:15, req:true},
+    {id:'sh2', name:'Nội dung sinh hoạt chuyên môn', desc:'Nội dung bám sát chủ đề, có phân tích bài dạy/hoạt động giáo dục cụ thể, thảo luận thực chất', max:30, req:true},
+    {id:'sh3', name:'Chất lượng thảo luận', desc:'Có nhiều ý kiến đóng góp thiết thực, mang tính xây dựng; ghi nhận được điểm mạnh và hạn chế rõ ràng', max:25, req:true},
+    {id:'sh4', name:'Kết luận & kế hoạch tiếp theo', desc:'Kết luận rõ ràng, phân công nhiệm vụ cụ thể, có định hướng cải tiến cho buổi sinh hoạt/tiết dạy tiếp theo', max:20, req:true},
+    {id:'sh5', name:'Hình thức biên bản', desc:'Biên bản đúng mẫu quy định, đủ thành phần tham dự, ký xác nhận đầy đủ', max:10, req:false},
+  ],
+  khac: [],
+}));
 
+function resetCriteria() {
+  const docType = document.getElementById('docType')?.value || 'skkn';
+  const defaults = CRITERIA_DEFAULT[docType];
+  if (!defaults || defaults.length === 0) {
+    alert('Loại tài liệu này không có tiêu chí mặc định.');
+    return;
+  }
+  if (!confirm('Khôi phục về tiêu chí mặc định? Mọi thay đổi (thêm/xóa/sửa) sẽ bị mất.')) return;
+  // Luôn lấy từ CRITERIA_DEFAULT — không bao giờ bị ảnh hưởng bởi thao tác người dùng
+  CRITERIA = JSON.parse(JSON.stringify(defaults));
+  // Đồng bộ lại CRITERIA_MAP để onDocTypeChange sau này cũng đúng
+  CRITERIA_MAP[docType] = JSON.parse(JSON.stringify(defaults));
+  renderCriteria();
+  updateTotal();
+}
 function addCustom() {
   const id = 'cc_'+Date.now();
   customCriteria.push({id, name:'', max:10, req:false});
@@ -1057,6 +1137,7 @@ function buildPrompt(docContent, criteriaText, totalMax, allC, lv, council, docT
   const synthNote = isSynthesis ? `\n(Lưu ý: Nội dung dưới đây là TỔNG HỢP ghi chú phân tích từ ${totalParts} phần của tài liệu, không phải tài liệu gốc. Hãy đánh giá dựa trên toàn bộ thông tin này.)\n` : '';
   const extraNote = extraRequest ? `\n\nYÊU CẦU BỔ SUNG TỪ HỘI ĐỒNG (bắt buộc thực hiện thêm, trả kết quả vào trường "extraAnalysis"):\n${extraRequest}\n` : '';
   return `Bạn là ${lv.role}${council?', thành viên của '+council:''}, thực hiện thẩm định ${docTypeName} theo tiêu chuẩn ${lv.label}.
+QUAN TRỌNG: Toàn bộ nội dung trả về PHẢI VIẾT BẰNG TIẾNG VIỆT. Tuyệt đối không dùng tiếng Trung, tiếng Anh hay ngôn ngữ khác.
 ${synthNote}
 Nhiệm vụ: Phân tích và chấm điểm tài liệu theo đúng bộ tiêu chí sau:
 
