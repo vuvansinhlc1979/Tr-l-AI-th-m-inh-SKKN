@@ -720,6 +720,12 @@ const LEVEL_CONFIG = {
 - Hạn chế: nêu 2-3 điểm, chỉ rõ vị trí trong tài liệu.
 - Đề xuất: 2-3 khuyến nghị thiết thực.
 - Kết luận: 3-4 câu tổng kết, phù hợp văn phong hội đồng cấp trường.`,
+    strictness: `- Áp dụng khung chấm điểm CHUẨN, ưu tiên ghi nhận nỗ lực và tinh thần cầu tiến của giáo viên/tác giả.
+- Nếu tiêu chí đạt yêu cầu cơ bản, có thể chấm 80-95% điểm tối đa của tiêu chí đó.
+- Chỉ trừ điểm nặng khi có lỗi rõ ràng, nghiêm trọng (thiếu minh chứng, sai cơ bản).
+- Tinh thần chấm: khuyến khích, động viên, phù hợp xét công nhận ở quy mô nội bộ trường.`,
+    penaltyFactor: 1.0,
+    maxPercentCap: 1.0,
     conclusionLen: 'Kết luận 3-4 câu',
     docLen: 6000,
     maxTokens: 2500,
@@ -733,6 +739,12 @@ const LEVEL_CONFIG = {
 - Hạn chế: nêu 3-4 điểm, chỉ rõ vị trí (mục, đoạn, bảng) và phân tích tại sao đó là hạn chế.
 - Đề xuất cải tiến: 3-4 khuyến nghị cụ thể, chỉ rõ cần bổ sung/chỉnh sửa gì ở mục nào.
 - Kết luận: 4-6 câu đánh giá toàn diện, nhận định về tiềm năng áp dụng tại địa phương.`,
+    strictness: `- Áp dụng khung chấm điểm CHẶT HƠN cấp Trường. Yêu cầu minh chứng cụ thể, số liệu rõ ràng mới được chấm điểm cao.
+- Nếu tiêu chí chỉ đạt yêu cầu cơ bản nhưng thiếu dẫn chứng chi tiết hoặc còn chung chung, CHỈ chấm 65-80% điểm tối đa của tiêu chí đó (không chấm gần tối đa như cấp Trường).
+- Trừ điểm rõ ràng đối với các điểm còn sơ sài, thiếu chiều sâu, dù không phải lỗi nghiêm trọng.
+- Tinh thần chấm: nghiêm túc, đòi hỏi chất lượng cao hơn để đảm bảo tính đại diện cho cấp xã/huyện, không dễ dãi cho điểm cao.`,
+    penaltyFactor: 0.93,
+    maxPercentCap: 0.90,
     conclusionLen: 'Kết luận 4-6 câu',
     docLen: 8000,
     maxTokens: 3500,
@@ -746,6 +758,13 @@ const LEVEL_CONFIG = {
 - Hạn chế: nêu 4-5 điểm, chỉ rõ vị trí (mục/đoạn/bảng/hình), phân tích mức độ ảnh hưởng đến chất lượng tổng thể.
 - Đề xuất cải tiến: 4-5 khuyến nghị chi tiết theo hướng nâng tầm nghiên cứu, có thể kèm gợi ý về tài liệu tham khảo hoặc phương pháp bổ sung.
 - Kết luận: 5-8 câu mang tính nhận định chuyên gia, đánh giá toàn diện về giá trị khoa học, thực tiễn, và khả năng nhân rộng trong toàn tỉnh. Phải thể hiện quan điểm rõ ràng của hội đồng chuyên môn.`,
+    strictness: `- Áp dụng khung chấm điểm KHẮT KHE NHẤT trong 3 cấp. Đứng trên góc nhìn chuyên gia khoa học giáo dục, đối chiếu nghiêm túc với lý luận và thực tiễn nhân rộng toàn tỉnh.
+- Điểm tối đa của một tiêu chí CHỈ được chấm khi tài liệu thể hiện xuất sắc, vượt trội, có tính sáng tạo/khoa học rõ rệt, minh chứng số liệu đầy đủ và thuyết phục.
+- Nếu tài liệu chỉ đạt mức "tốt" thông thường (giải pháp ổn nhưng chưa có gì đột phá, minh chứng chưa thật đầy đủ), CHỈ chấm 55-70% điểm tối đa của tiêu chí đó.
+- Phải chỉ ra cả những hạn chế nhỏ mà cấp Trường/Xã có thể bỏ qua, vì đây là yêu cầu cao nhất để đảm bảo chất lượng nhân rộng toàn tỉnh.
+- Tinh thần chấm: khắt khe, đòi hỏi cao, không vì nể nang mà cho điểm cao nếu tài liệu chưa thực sự xuất sắc.`,
+    penaltyFactor: 0.85,
+    maxPercentCap: 0.80,
     conclusionLen: 'Kết luận 5-8 câu chuyên sâu mang tính chuyên gia',
     docLen: 10000,
     maxTokens: 4000,
@@ -986,8 +1005,8 @@ async function callOpenRouter(prompt, retryCount = 0) {
         body: JSON.stringify({
           model: model,
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: 4000,
-          temperature: 0.2
+           max_tokens: 4000,
+          temperature: 0.15
         })
       });
       
@@ -1036,6 +1055,29 @@ function showError(id,msg){
 }
 
 // ===== ASSESSMENT (with chunking) =====
+function applyLevelPenalty(result, lv) {
+  const factor = lv.penaltyFactor != null ? lv.penaltyFactor : 1.0;
+  if (factor >= 1.0 || !Array.isArray(result.scores)) return result;
+
+  let newTotal = 0;
+  result.scores = result.scores.map(s => {
+    const adjusted = Math.round(s.score * factor * 10) / 10;
+    newTotal += adjusted;
+    return { ...s, score: adjusted };
+  });
+
+  newTotal = Math.round(newTotal * 10) / 10;
+  result.total = newTotal;
+
+  const pct = newTotal / result.totalMax;
+  if (pct >= 0.90) result.verdict = 'Xuất sắc';
+  else if (pct >= 0.75) result.verdict = 'Tốt';
+  else if (pct >= 0.60) result.verdict = 'Đạt';
+  else result.verdict = 'Không đạt';
+
+  return result;
+}
+
 async function startAssess() {
   const key = document.getElementById('apiKey').value.trim();
   if(!key){alert('Vui lòng nhập API Key ở tab Cài đặt!');goTab('setup',null);return;}
@@ -1081,6 +1123,7 @@ async function startAssess() {
       clearInterval(iv);
       const clean = raw.replace(/```json|```/g,'').trim();
       result = JSON.parse(clean);
+      result = applyLevelPenalty(result, lv);
     } else {
       // --- CHUNKING: split into numChunks parts ---
       const chunkSize = Math.ceil(docTrimmed.length / numChunks);
@@ -1107,6 +1150,7 @@ async function startAssess() {
       const synthRaw = await callOpenRouter(synthPrompt);
       const synthClean = synthRaw.replace(/```json|```/g,'').trim();
       result = JSON.parse(synthClean);
+      result = applyLevelPenalty(result, lv);
     }
 
     lastResult = result;
@@ -1142,6 +1186,10 @@ THANG XẾP LOẠI:
 
 YÊU CẦU MỨC ĐỘ PHÂN TÍCH (${lv.label.toUpperCase()}):
 ${lv.detailLevel}
+
+NGUYÊN TẮC CHẤM ĐIỂM BẮT BUỘC (${lv.label.toUpperCase()}) — phải tuân thủ nghiêm ngặt khi cho điểm từng tiêu chí:
+${lv.strictness}
+QUAN TRỌNG: Đây là nguyên tắc chấm điểm cốt lõi, ảnh hưởng trực tiếp đến điểm số "score" của từng tiêu chí trong phần "scores". Không chấm điểm cao hơn mức cho phép ở trên dù tài liệu có vẻ tốt, vì cấp đánh giá cao hơn luôn đòi hỏi chuẩn mực cao hơn.
 
 Tài liệu cần thẩm định:
 ---
